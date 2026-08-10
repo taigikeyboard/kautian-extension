@@ -195,8 +195,12 @@ export function createEngine(packed) {
   }
 
   function queryLatin(input, tiers) {
-    const { pojKey, tlKey, toned: tonedKey, hasTone } = normalizeLatin(input);
-    if (hasTone) searchExact(ixToned(), tonedKey, (i) => add(tiers, i, TIER.TONED));
+    const { pojKey, tlKey, toned, tonedTl } = normalizeLatin(input);
+    // Always try toned-exact: an unmarked romanization is itself a valid
+    // tone-1 spelling (khuann ≡ tone 1), so an exact toned hit outranks
+    // toneless matches. Both the raw key and its POJ→TL-folded twin are tried.
+    searchExact(ixToned(), toned, (i) => add(tiers, i, TIER.TONED));
+    if (tonedTl !== toned) searchExact(ixToned(), tonedTl, (i) => add(tiers, i, TIER.TONED));
     // the prefix index's exact flag serves tiers 2 and 3 in one pass
     searchPrefix(ixLatin(), tlKey, (i, exact) =>
       add(tiers, i, exact ? TIER.EXACT : TIER.PREFIX));
@@ -237,6 +241,8 @@ export function createEngine(packed) {
   }
 
   function queryBopomofo(input, tiers) {
+    // Toned-exact first: TPS with tone marks (or none = tone 1) matches tps_num
+    searchExact(ixToned(), input.normalize("NFC").trim(), (i) => add(tiers, i, TIER.TONED));
     const tpsKey = normalizeTps(input);
     searchPrefix(ixTps(), tpsKey, (i, exact) =>
       add(tiers, i, exact ? TIER.EXACT : TIER.PREFIX));

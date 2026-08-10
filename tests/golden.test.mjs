@@ -27,6 +27,20 @@ test("entry ids: kan-tann / kan-ta / 干焦 all resolve to entry 448", () => {
   assert.equal(v.results[0].id, 448);
 });
 
+test("entry 16685 (寬/緩 khuann): every input system reaches it", () => {
+  // unmarked TL is a valid tone-1 spelling → toned-exact puts 16685 on top
+  for (const q of ["khuaⁿ", "khuann", "ㄎㄨㆩ", "khoann1", "khoaⁿ1", "KHUANN"]) {
+    const r = engine.query(q);
+    assert.equal(r.results[0]?.id, 16685, `top result for ${JSON.stringify(q)} should be entry 16685`);
+  }
+  // Hanzi lookups share the surface form with other entries (寬 khuan, 緩 uān)
+  // but 16685 must be present
+  for (const q of ["寬", "緩"]) {
+    const r = engine.query(q);
+    assert.ok(r.results.some((x) => x.id === 16685), `${q} should include entry 16685`);
+  }
+});
+
 test("entry dedup: one row per entry id", () => {
   const r = engine.query("kanna");
   const ids = r.results.map((x) => x.id);
@@ -46,8 +60,10 @@ test("toned exact: tone digits / tone diacritics", () => {
 test("case-insensitive + toneless: SI → high-frequency si* words", () => {
   const r = engine.query("SI");
   assert.ok(r.results.length > 0);
-  assert.equal(r.results[0].tier, TIER.EXACT);
-  assert.ok(hanzis(r).includes("是")); // sī is in the highest-frequency group
+  // "si" is a valid tone-1 spelling, so the toned-exact hit (詩 si) leads;
+  // toneless matches like 是 sī follow
+  assert.ok(r.results[0].tier <= TIER.EXACT);
+  assert.ok(hanzis(r).includes("是"));
 });
 
 test("POJ input: chhiau→tshiau, soa-lak-khu→沙鹿區", () => {
@@ -87,7 +103,9 @@ test("Hanzi: exact / prefix / 台→臺 folding", () => {
 test("TPS input: ㆠㄨㄣˊ → 文", () => {
   const r = engine.query("ㆠㄨㄣˊ");
   assert.ok(hanzis(r).includes("文"));
-  assert.equal(r.results[0].tier, TIER.EXACT);
+  // with the tone mark present this is now a toned-exact hit
+  assert.equal(r.results[0].tier, TIER.TONED);
+  assert.equal(r.results[0].hanzi, "文");
 });
 
 test("Zhuyin approximate sound: ㄙㄨㄉㄧㄚ, ㄒㄧ", () => {

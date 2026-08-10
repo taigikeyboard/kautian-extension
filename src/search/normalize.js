@@ -21,6 +21,8 @@ function segNotone(seg) {
 // pojKey:  toneless, POJ spelling preserved (matched against poj_notone)
 // tlKey:   toneless, normalizeToTl applied per segment (matched against tl_notone)
 // toned:   toned key (lowercase, hyphens/whitespace removed, tone marks/digits kept)
+// tonedTl: toned key with POJ spelling folded to TL (khoann1 → khuann1, khoaⁿ → khuann);
+//          tone marks/digits survive because normalizeToTl only rewrites base letters
 // hasTone: whether the input carries tone info (diacritics or digits)
 export function normalizeLatin(input) {
   const raw = input.trim();
@@ -28,8 +30,9 @@ export function normalizeLatin(input) {
   const pojKey = segs.map(segNotone).join("");
   const tlKey = segs.map((s) => normalizeToTl(segNotone(s))).join("");
   const toned = raw.toLowerCase().replace(SEG_SPLIT_RE, "").normalize("NFC");
+  const tonedTl = normalizeToTl(toned.normalize("NFD")).normalize("NFC");
   const hasTone = /[0-9]/.test(raw) || /[̀-ͯ]/.test(raw.normalize("NFD"));
-  return { pojKey, tlKey, toned, hasTone };
+  return { pojKey, tlKey, toned, tonedTl, hasTone };
 }
 
 // Hanzi variant folding (applied on both sides; v1 starts small)
