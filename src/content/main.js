@@ -1,6 +1,6 @@
 // Content-script entry: mounting, lazy data loading, query routing
 // Mounts the enhanced search UI on the dictionary search form.
-import { CONFIG } from "./config.js";
+import { CONFIG, extensionResourceUrl } from "./config.js";
 import { createEngine } from "../search/engine.js";
 import { createUI } from "./ui.js";
 
@@ -13,6 +13,12 @@ function init() {
   const input = document.getElementById(CONFIG.INPUT_ID);
   const form = document.forms[CONFIG.FORM_NAME];
   if (!input || !form) return; // not a search page — stay fully idle
+
+  const dataUrl = extensionResourceUrl(globalThis.chrome?.runtime, CONFIG.DATA_URL);
+  if (!dataUrl) {
+    console.warn("[kautian-extension] extension context unavailable; reload the page");
+    return;
+  }
 
   const locale = getLocale();
   const luiEnabled = () => form.elements.lui?.value === CONFIG.LUI_ENABLED;
@@ -36,7 +42,7 @@ function init() {
   function ensureData() {
     if (engine || loading) return;
     loading = true;
-    fetch(chrome.runtime.getURL(CONFIG.DATA_URL))
+    fetch(dataUrl)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

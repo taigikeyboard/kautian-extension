@@ -6,10 +6,27 @@ import { normalizeLatin, foldHanzi, normalizeTps } from "../src/search/normalize
 import { dataFold, queryFold } from "../src/search/zhuyin-fold.js";
 import { boundedDistance, fuzzyThreshold } from "../src/search/fuzzy.js";
 import { hasRegexSyntax, parsePattern } from "../src/search/regex-mode.js";
-import { CONFIG } from "../src/content/config.js";
+import { CONFIG, extensionResourceUrl } from "../src/content/config.js";
+import { dropdownMaxHeight } from "../src/content/ui.js";
 
 test("dropdown result limit favors broad matching", () => {
   assert.equal(CONFIG.LIMIT, 200);
+});
+
+test("extension resource URL tolerates an invalidated runtime", () => {
+  assert.equal(extensionResourceUrl(undefined, CONFIG.DATA_URL), null);
+  assert.equal(extensionResourceUrl({}, CONFIG.DATA_URL), null);
+  assert.equal(
+    extensionResourceUrl({ getURL: (path) => `chrome-extension://test/${path}` }, CONFIG.DATA_URL),
+    "chrome-extension://test/data/kautian.min.json"
+  );
+  assert.equal(extensionResourceUrl({ getURL: () => { throw new Error("invalidated"); } }, CONFIG.DATA_URL), null);
+});
+
+test("dropdown height stays within the viewport", () => {
+  assert.equal(dropdownMaxHeight(300, 900), 420);
+  assert.equal(dropdownMaxHeight(700, 900), 192);
+  assert.equal(dropdownMaxHeight(900, 900), 0);
 });
 
 test("classify: mode detection", () => {

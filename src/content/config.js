@@ -13,3 +13,11 @@ export const CONFIG = {
     return `/${locale}/su/${id}/`;
   },
 };
+
+export function extensionResourceUrl(runtime, path) {
+  try {
+    return typeof runtime?.getURL === "function" ? runtime.getURL(path) : null;
+  } catch {
+    return null;
+  }
+}

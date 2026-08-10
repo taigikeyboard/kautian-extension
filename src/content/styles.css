@@ -3,6 +3,7 @@
 .stnp-dropdown {
   position: absolute;
   z-index: 10500; /* above bootstrap modal (1055) and host-site elements */
+  box-sizing: border-box;
   max-height: 420px;
   overflow-y: auto;
   background: #fff;

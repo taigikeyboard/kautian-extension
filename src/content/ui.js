@@ -3,6 +3,13 @@
 // keydown/pointerdown each bound exactly once at init, full ARIA combobox pattern.
 // Keep status messages brief and clear in English.
 
+const MAX_DROPDOWN_HEIGHT = 420;
+const VIEWPORT_GAP = 8;
+
+export function dropdownMaxHeight(inputBottom, viewportHeight) {
+  return Math.max(0, Math.min(MAX_DROPDOWN_HEIGHT, viewportHeight - inputBottom - VIEWPORT_GAP));
+}
+
 export function createUI({ input, buildHref, onFill }) {
   const listId = "stnp-listbox";
   const box = document.createElement("div");
@@ -28,6 +35,7 @@ export function createUI({ input, buildHref, onFill }) {
     box.style.top = `${r.bottom + window.scrollY + 2}px`;
     // lock to the input's width — long entries (proverbs) must not widen the box
     box.style.width = `${r.width}px`;
+    box.style.maxHeight = `${dropdownMaxHeight(r.bottom, window.innerHeight)}px`;
   }
 
   function hide() {
@@ -175,6 +183,10 @@ export function createUI({ input, buildHref, onFill }) {
   window.addEventListener("resize", () => {
     if (!box.hidden) position();
   }, { passive: true });
+
+  document.addEventListener("scroll", () => {
+    if (!box.hidden) position();
+  }, { capture: true, passive: true });
 
   return { render, hide };
 }
