@@ -1,23 +1,15 @@
-.PHONY: all install data js build test bench package clean
+.PHONY: all install build test bench package clean
 
-# Full pipeline: dataset + content-script bundle
 all: build
 
 install:
 	npm install
 
-# kautian.csv + kautian.ods → data/kautian.min.json (+ QA report)
-data:
-	npm run build:data
-
-# esbuild bundle → dist/content.js + dist/content.css
-js:
-	npm run build:js
-
+# everything: kautian.csv + kautian.ods → data/kautian.min.json, then esbuild bundle
 build:
 	npm run build
 
-# unit + golden tests (golden tests need `make data` first)
+# unit + golden tests (run `make build` first on a fresh tree)
 test:
 	npm test
 

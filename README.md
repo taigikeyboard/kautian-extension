@@ -20,8 +20,8 @@ npm run bench        # performance measurements
 npm run package      # produces sutian-plus.zip (for store upload)
 ```
 
-A Makefile wraps the same commands: `make install`, `make build` (or `make data` / `make js`),
-`make test`, `make bench`, `make package`, `make clean`.
+A Makefile wraps the same commands: `make install`, `make build`, `make test`, `make bench`,
+`make package`, `make clean`.
 
 Local install: after `npm run build`, Chrome → `chrome://extensions` → Developer mode →
 "Load unpacked" → select this repo's root directory.
