@@ -9,8 +9,11 @@
   border: 1px solid #c9c9c9;
   border-radius: 0.375rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  font-size: 0.95rem;
-  line-height: 1.5;
+  /* match the host site's typography: te.css sets these on :root
+     (Tauhu Oo covers POJ diacritics and TPS); fallbacks mirror its values */
+  font-family: var(--bs-body-font-family, "Tauhu Oo", "Noto Sans TC", sans-serif);
+  font-size: var(--bs-body-font-size, 1.3rem);
+  line-height: var(--bs-body-line-height, 1.7);
 }
 
 .stnp-row {
