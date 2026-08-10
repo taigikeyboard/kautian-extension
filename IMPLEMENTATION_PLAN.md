@@ -389,14 +389,34 @@ Golden query samples (into fixtures): `sutiann`, `su-tiann`, `sū-tiānn`, `su7t
 ## 11. Licensing and Compliance
 
 - Both vendor projects are MIT; code reuse is unproblematic (retain copyright notices).
-- **kautian.csv originates from MoE dictionary data**: the MoE has historically released under "Creative Commons Attribution-NoDerivs Taiwan 3.0"-type terms — whether derived fields like `*_notone`/`zhu_key` and distribution with the extension constitute a "derivative work" **must be clarified before store submission** (→ Q1, the highest-risk item in this plan). Alternative: on first activation, the extension downloads the official data on the user's side and builds it locally (costly; listed only as a fallback).
 - Extension license: MIT (consistent with the repo LICENSE).
+- **kautian.csv originates from MoE dictionary data** — license verified 2026-08-10 against
+  https://sutian.moe.edu.tw/zh-hant/piantsip/pankhuan-singbing/: the site's "text and audio
+  content" is released under **CC Attribution-NoDerivs 3.0 Taiwan (CC BY-ND 3.0 TW)**;
+  use within the terms requires no separate permission.
+- **Assessment: our use is defensible as reproduction + collection, not adaptation** (not legal
+  advice; reasoning recorded for review):
+  1. CSV→JSON repacking and column selection are format shifting for technical necessity,
+     which CC 3.0 permits even under ND.
+  2. Load-time derived keys (`tlNotone`, `zhu`, …) are mechanical, non-creative transformations —
+     adaptation (改作) under Taiwan copyright law requires creative transformation of expression.
+  3. Our own columns (POJ, frequency) sit *alongside* unmodified MoE content — a Collection,
+     which the ND legal code explicitly permits as long as the licensed content itself is unmodified
+     (our `tl`/`hanzi`/`tps` values are shipped verbatim).
+  4. We redistribute only the headword layer (word forms/readings); definitions, example
+     sentences, and audio — the creative core of the dictionary — are never shipped.
+- **Obligations to satisfy before store submission (BY + no-endorsement)**:
+  1. Attribution in README, the store listing, and the extension description: name the source
+     (MoE "Dictionary of Frequently-Used Taiwan Taiwanese"), link the license
+     (CC BY-ND 3.0 TW), and link the source site.
+  2. State clearly that Sutian+ is an unofficial third-party tool, not affiliated with or
+     endorsed by the MoE.
 
 ## 12. Risk Register
 
 | Risk | Impact | Mitigation |
 |------|------|------|
-| Data license disallows redistribution (Q1) | Cannot publish | Confirm terms before submission; fallback in §11 |
+| Data license disallows redistribution (Q1) | Cannot publish | ✅ Resolved: CC BY-ND 3.0 TW verified; use assessed as reproduction + collection (§11). Remaining obligations: attribution + non-endorsement statement |
 | Linguistic errors in the FOLD table | Approximate search misses / wrong hits | Table isolated as its own module + tests, v0 marked pending review; can be revised independently after release |
 | Regex ReDoS freezes the tab | UX breakdown | Length cap + time-budget abort (§6.5); wasm RE2 if necessary |
 | Site redesign (DOM/URL) | Silent feature failure | selectors/URLs centralized in `config.js`; single-line console warning on mount failure |
@@ -405,7 +425,7 @@ Golden query samples (into fixtures): `sutiann`, `su-tiann`, `sū-tiānn`, `su7t
 
 ## 13. Open Questions (codex reviewers: please take a position on each)
 
-1. **Data licensing** (§11): compliance verdict on distributing kautian-derived data with the extension?
+1. **Data licensing** (§11): ✅ resolved 2026-08-10 — CC BY-ND 3.0 TW; assessment and remaining attribution obligations recorded in §11.
 2. **FOLD table v0** (§5.4): check the sound-class mappings row by row, especially ㄈ→h, ㄡ→{au,oo}, the nasalized-vowel fold, and dropping checked-tone codas.
 3. **Option A vs B** (§3): is the 600ms P95 threshold and lazy strategy reasonable? Should we go straight to SW + caching?
 4. **Regex field scope** (§6.5): are four fields enough? Support `hanzi:` / `tl:` field-prefix syntax (v1 leans no)?

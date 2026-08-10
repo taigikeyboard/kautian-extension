@@ -20,7 +20,7 @@
 - [x] Stage 1：資料管線（`scripts/build-data.mjs` → `data/kautian.min.json`）
 - [x] Stage 2：查詢解讀 + 搜尋引擎（`src/search/`，純函式 + node:test，19/19 綠）
 - [x] Stage 3：Extension shell + UI（`src/content/`、manifest、esbuild）
-- [ ] Stage 4：整合驗證與打包（zip 已產出；待真站手動驗證、icons、授權釐清）
+- [ ] Stage 4：整合驗證與打包（zip 已產出；授權已確認 CC BY-ND 3.0 TW ✅，README 已加姓名標示與非官方聲明；待真站手動驗證、icons、商店頁姓名標示）
 - [x] 效能優化：`PERF_EVALUATION.md` 方案 C+（資料 -40%、冷啟動 -55%、無 Map lazy 索引）
 
 ## Part 2：羅馬字 hover popup（Part 1 上架後才開始）

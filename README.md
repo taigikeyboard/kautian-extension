@@ -31,6 +31,12 @@ Local install: after `npm run build`, Chrome → `chrome://extensions` → Devel
 ## Data and Licensing
 
 - Code: MIT.
-- The `kautian.csv` lexicon is derived from MoE dictionary data; MoE licensing terms must be
-  confirmed before public redistribution (see IMPLEMENTATION_PLAN.md §11).
+- Lexicon data: the headword data in `kautian.csv` originates from the Ministry of Education
+  《臺灣台語常用詞辭典》 (Dictionary of Frequently-Used Taiwan Taiwanese,
+  https://sutian.moe.edu.tw/), whose text content is released under the
+  [Creative Commons Attribution-NoDerivs 3.0 Taiwan license](https://creativecommons.org/licenses/by-nd/3.0/tw/).
+  The MoE content (Tâi-lô, Hanzi, TPS headword forms) is redistributed verbatim;
+  compliance notes are in IMPLEMENTATION_PLAN.md §11.
+- **Sutian+ is an unofficial third-party tool and is not affiliated with or endorsed by the
+  Ministry of Education.**
 - `vendor/taigi-converter`, `vendor/ebird-extension`: MIT (git submodules).
