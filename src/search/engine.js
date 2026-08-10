@@ -26,10 +26,10 @@ const SUBSTR_CAP = 100;
 const STR_COLS = ["tl", "hanzi", "poj", "tps", "tlNum", "tpsNotoneVar", "abTl", "abPoj", "abTps"];
 
 function unpack(packed) {
-  if (packed?.meta?.format !== 2) {
+  if (packed?.meta?.format !== 3) {
     throw new Error(`unsupported data format: ${packed?.meta?.format}`);
   }
-  const d = { freq: packed.freq, flags: packed.flags };
+  const d = { id: packed.id, freq: packed.freq, flags: packed.flags };
   for (const k of STR_COLS) d[k] = packed[k].split("\n");
   return d;
 }
@@ -153,6 +153,7 @@ export function createEngine(packed) {
     return {
       i,
       tier,
+      id: d.id[i],
       tl: d.tl[i],
       hanzi: d.hanzi[i],
       poj: d.poj[i],
@@ -176,7 +177,16 @@ export function createEngine(packed) {
       if (d.freq[a[0]] !== d.freq[b[0]]) return d.freq[b[0]] - d.freq[a[0]];
       return d.tl[a[0]].length - d.tl[b[0]].length;
     });
-    return entries.slice(0, limit).map(([i, tier]) => toResult(i, tier));
+    // one row per entry id — the best-ranked form represents the entry
+    const seen = new Set();
+    const results = [];
+    for (const [i, tier] of entries) {
+      if (seen.has(d.id[i])) continue;
+      seen.add(d.id[i]);
+      results.push(toResult(i, tier));
+      if (results.length >= limit) break;
+    }
+    return results;
   }
 
   function add(tiers, i, tier) {
@@ -250,11 +260,15 @@ export function createEngine(packed) {
         (i) => hits.push(i)
       );
       hits.sort((a, b) => d.freq[b] - d.freq[a]);
-      return {
-        mode,
-        truncated,
-        results: hits.slice(0, limit).map((i) => toResult(i, null)),
-      };
+      const seen = new Set();
+      const results = [];
+      for (const i of hits) {
+        if (seen.has(d.id[i])) continue;
+        seen.add(d.id[i]);
+        results.push(toResult(i, null));
+        if (results.length >= limit) break;
+      }
+      return { mode, truncated, results };
     }
 
     const tiers = new Map();

@@ -42,16 +42,6 @@
   font-size: 0.85em;
 }
 
-.stnp-badge {
-  margin-left: auto;
-  padding: 0 0.45em;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  color: #6b7280;
-  font-size: 0.75em;
-  align-self: center;
-}
-
 .stnp-hint {
   padding: 0.3em 0.75em;
   color: #6b7280;

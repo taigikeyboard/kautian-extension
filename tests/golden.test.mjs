@@ -16,6 +16,23 @@ const engine = createEngine(JSON.parse(readFileSync(DATA, "utf8")));
 const tls = (r) => r.results.map((x) => x.tl);
 const hanzis = (r) => r.results.map((x) => x.hanzi);
 
+test("entry ids: kan-tann / kan-ta / 干焦 all resolve to entry 448", () => {
+  for (const q of ["kan-tann", "kan-ta", "kan-na", "干焦"]) {
+    const r = engine.query(q);
+    assert.ok(r.results.length > 0, `no results for ${q}`);
+    assert.equal(r.results[0].id, 448, `top result for ${q} should be entry 448`);
+  }
+  // variant hanzi spelling (異用字) also resolves to the parent entry
+  const v = engine.query("乾焦");
+  assert.equal(v.results[0].id, 448);
+});
+
+test("entry dedup: one row per entry id", () => {
+  const r = engine.query("kanna");
+  const ids = r.results.map((x) => x.id);
+  assert.equal(ids.length, new Set(ids).size);
+});
+
 test("toned exact: tone digits / tone diacritics", () => {
   const a = engine.query("si7");
   assert.equal(a.results[0].hanzi, "是");
@@ -90,7 +107,8 @@ test("fuzzy: sualakku (missing h) → 沙鹿區", () => {
 test("regex mode", () => {
   const a = engine.query("/^tshiau/");
   assert.ok(a.results.length > 0);
-  const notone = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  // the engine's regex scan includes tlNotone (toneless AND hyphenless)
+  const notone = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-\s]+/g, "");
   assert.ok(
     a.results.every(
       (x) =>

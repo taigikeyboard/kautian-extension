@@ -3,15 +3,6 @@
 // keydown/pointerdown each bound exactly once at init, full ARIA combobox pattern.
 // Note: user-visible strings stay in Chinese — the target audience reads the
 // MoE dictionary in Chinese.
-import { TIER } from "../search/engine.js";
-
-const TIER_BADGE = {
-  [TIER.PREFIX]: "前綴",
-  [TIER.ABBREV]: "縮寫",
-  [TIER.ZHUYIN]: "相似音",
-  [TIER.SUBSTR]: "包含",
-  [TIER.FUZZY]: "模糊",
-};
 
 export function createUI({ input, buildHref, onFill }) {
   const listId = "stnp-listbox";
@@ -120,10 +111,6 @@ export function createUI({ input, buildHref, onFill }) {
       tps.textContent = res.tps;
       row.append(hanzi, tl, poj, tps);
 
-      if (res.variant) row.append(makeBadge("又音"));
-      const badge = state.mode === "regex" ? "regex" : TIER_BADGE[res.tier];
-      if (badge) row.append(makeBadge(badge));
-
       box.appendChild(row);
       rows.push(row);
     });
@@ -131,13 +118,6 @@ export function createUI({ input, buildHref, onFill }) {
       addHint(state.truncated ? "regex 模式（僅本機篩選）— 結果不完整" : "regex 模式（僅本機篩選）");
     }
     show();
-  }
-
-  function makeBadge(text) {
-    const b = document.createElement("span");
-    b.className = "stnp-badge";
-    b.textContent = text;
-    return b;
   }
 
   // --- events (each bound once) ---

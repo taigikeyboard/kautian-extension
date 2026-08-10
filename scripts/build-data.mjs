@@ -1,19 +1,27 @@
-// kautian.csv → data/kautian.min.json (format v2: string-pool) + data/build-report.txt
+// kautian.csv + kautian.ods → data/kautian.min.json (format v3) + data/build-report.txt
 // IMPLEMENTATION_PLAN.md §4, PERF_EVALUATION.md option C+. Zero dependencies, Node 22+.
 //
-// Format v2: tlNotone / pojNotone / tpsNotone / zhu are not shipped in the file;
-// they are derived at runtime (src/search/derive.js). This script QAs that by
-// fully comparing "derived result vs CSV column" and fails the build on any
-// mismatch — data or rule drift blows up here instead of silently mis-matching.
+// Format v3 = v2 (string-pool, runtime-derived notone/zhu) + entry ids:
+// - Every shipped row is joined to a dictionary entry id from kautian.ods
+//   (詞目 sheet + variant-reading sheets 又唸作/俗唸作/合音唸作 + variant-spelling
+//   sheet 異用字), so the UI can link straight to /su/<id>/.
+// - CSV rows that join to no entry (given names, surnames, dialect-table forms)
+//   are dropped — the dropdown must only show dictionary headword forms.
+// - Entry-type 近反義詞不單列詞目者 is excluded (its ids 404 on the site).
+// - ODS forms missing from the CSV are synthesized with taigi-converter so
+//   every linkable entry form is searchable.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { dataFold } from "../src/search/zhuyin-fold.js";
 import { deriveTlNotone, derivePojNotone, deriveTpsNotone } from "../src/search/derive.js";
+import { readZipEntry, sheetRows } from "./ods.mjs";
+import { convert, toToneNumber } from "../vendor/taigi-converter/src/index.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const SRC = join(ROOT, "kautian.csv");
+const SRC_CSV = join(ROOT, "kautian.csv");
+const SRC_ODS = join(ROOT, "kautian.ods");
 const OUT_DIR = join(ROOT, "data");
 const OUT_JSON = join(OUT_DIR, "kautian.min.json");
 const OUT_REPORT = join(OUT_DIR, "build-report.txt");
@@ -46,8 +54,67 @@ function parseCsv(text) {
   return rows;
 }
 
+// --- ODS: build the (roman, hanzi) → { id, variant } join map ---
+const OK_TYPES = new Set(["主詞目", "單字不成詞者", "臺華共同詞", "附錄"]);
+const MARK_RE = /【[^】]*】/g;
+const normHanzi = (s) => s.normalize("NFC").replace(MARK_RE, "").trim();
+// display form: hyphens instead of spaces, original case kept
+const displayRoman = (s) =>
+  s.normalize("NFC").replace(MARK_RE, "").trim().replace(/\s+/g, "-");
+// join key: additionally lowercased, neutral-tone -- folded to -
+const keyRoman = (s) =>
+  displayRoman(s).toLowerCase().replace(/^--/, "").replaceAll("--", "-");
+const formKey = (roman, hanzi) => `${roman}${hanzi}`;
+
+function loadOdsForms() {
+  const xml = readZipEntry(SRC_ODS, "content.xml").toString("utf8");
+  const forms = new Map(); // key → { id, variant, tl, hanzi } (tl/hanzi = display forms)
+  const put = (id, roman, hanzi, variant) => {
+    for (const r of roman.split("/")) {
+      if (!r.trim()) continue;
+      const k = formKey(keyRoman(r), normHanzi(hanzi));
+      const existing = forms.get(k);
+      if (!existing || (existing.variant && !variant)) {
+        forms.set(k, { id, variant, tl: displayRoman(r), hanzi: normHanzi(hanzi) });
+      }
+    }
+  };
+
+  const main = sheetRows(xml, "詞目").slice(1);
+  const idRomans = new Map(); // id → roman[] (for the 異用字 join)
+  const okIds = new Set();
+  for (const r of main) {
+    if (r.length < 4 || !OK_TYPES.has(r[1])) continue;
+    const id = Math.trunc(Number(r[0]));
+    if (!Number.isFinite(id) || id <= 0) continue;
+    okIds.add(id);
+    put(id, r[3], r[2], 0);
+    const list = idRomans.get(id) || [];
+    for (const roman of r[3].split("/")) if (roman.trim()) list.push(roman);
+    idRomans.set(id, list);
+  }
+  for (const sheet of ["又唸作", "俗唸作", "合音唸作"]) {
+    for (const r of sheetRows(xml, sheet).slice(1)) {
+      if (r.length < 3) continue;
+      const id = Math.trunc(Number(r[0]));
+      if (okIds.has(id)) put(id, r[2], r[1], 1);
+    }
+  }
+  // 異用字: variant hanzi spellings; readings come from the parent entry
+  for (const r of sheetRows(xml, "異用字").slice(1)) {
+    if (r.length < 3) continue;
+    const id = Math.trunc(Number(r[0]));
+    if (!okIds.has(id)) continue;
+    for (const roman of idRomans.get(id) || []) put(id, roman, r[2], 1);
+  }
+  return forms;
+}
+
+// --- main ---
 const t0 = performance.now();
-const rows = parseCsv(readFileSync(SRC, "utf8"));
+const odsForms = loadOdsForms();
+
+const rows = parseCsv(readFileSync(SRC_CSV, "utf8"));
 const header = rows.shift();
 const col = Object.fromEntries(header.map((h, i) => [h, i]));
 const need = (name) => {
@@ -67,27 +134,37 @@ const QA_COLS = {
 };
 const iFreq = need("frequency");
 const iMain = need("kautian_main");
-const iVariant = need("is_variant");
 
 const cols = Object.fromEntries(Object.keys(SHIP).map((k) => [k, []]));
+const ids = [];
 const freq = [];
-const flags = [];
+const flags = []; // bit0: main entry, bit1: variant reading/spelling
 const errors = [];
-const qa = { emptyFields: {}, unknownTps: new Map(), dupes: 0, mismatch: { tlNotone: [], pojNotone: [], tpsNotone: [] } };
-const seen = new Set();
+const qa = { emptyFields: {}, unknownTps: new Map(), mismatch: { tlNotone: [], pojNotone: [], tpsNotone: [] } };
+let droppedCsv = 0;
+const covered = new Set();
 
 for (const r of rows) {
   const get = (i) => (r[i] ?? "").normalize("NFC");
-  for (const [k, i] of Object.entries(SHIP)) {
+  const k = formKey(keyRoman(get(SHIP.tl)), normHanzi(get(SHIP.hanzi)));
+  const hit = odsForms.get(k);
+  if (!hit) {
+    droppedCsv++;
+    continue; // not a dictionary headword form (name/surname/dialect table)
+  }
+  covered.add(k);
+
+  for (const [name, i] of Object.entries(SHIP)) {
     const v = get(i);
-    if (v.includes("\n")) errors.push(`column ${k} contains a newline (string-pool separator): ${v}`);
-    cols[k].push(v);
-    if (!v && ["tl", "hanzi", "poj"].includes(k)) {
-      qa.emptyFields[k] = (qa.emptyFields[k] || 0) + 1;
+    if (v.includes("\n")) errors.push(`column ${name} contains a newline (string-pool separator): ${v}`);
+    cols[name].push(v);
+    if (!v && ["tl", "hanzi", "poj"].includes(name)) {
+      qa.emptyFields[name] = (qa.emptyFields[name] || 0) + 1;
     }
   }
+  ids.push(hit.id);
   freq.push(Number(get(iFreq)) || 0);
-  flags.push((get(iMain) === "True" ? 1 : 0) | (get(iVariant) === "True" ? 2 : 0));
+  flags.push((get(iMain) === "True" ? 1 : 0) | (hit.variant ? 2 : 0));
 
   // QA: runtime derivation vs CSV (hard gate)
   const i = cols.tl.length - 1;
@@ -106,14 +183,45 @@ for (const r of rows) {
   // QA: FOLD table coverage (soft, report only)
   const { unknown } = dataFold(get(QA_COLS.tpsNotone));
   for (const ch of unknown) qa.unknownTps.set(ch, (qa.unknownTps.get(ch) || 0) + 1);
+}
 
-  const dupKey = `${cols.tl[i]} ${cols.hanzi[i]}`;
-  if (seen.has(dupKey)) qa.dupes++;
-  else seen.add(dupKey);
+// --- synthesize ODS forms that the CSV does not cover ---
+const abbrevOf = (roman, deriveFn) => {
+  const syls = roman.split(/[-\s]+/).filter(Boolean);
+  if (syls.length < 2) return "";
+  return syls.map((s) => deriveFn(s)[0] || "").join("");
+};
+let synthesized = 0;
+let synthFailures = 0;
+for (const [k, form] of odsForms) {
+  if (covered.has(k)) continue;
+  let poj = "";
+  let tps = "";
+  let tlNum = "";
+  try {
+    poj = convert(form.tl, "tl", "poj");
+    tps = convert(form.tl, "tl", "zhuyin").replace(/\s+/g, "");
+    tlNum = toToneNumber(form.tl).toLowerCase().replace(/--|[-\s]+/g, "");
+  } catch {
+    synthFailures++; // keep the row anyway — tl/hanzi search still works
+  }
+  cols.tl.push(form.tl);
+  cols.hanzi.push(form.hanzi);
+  cols.poj.push(poj);
+  cols.tps.push(tps);
+  cols.tlNum.push(tlNum);
+  cols.tpsNotoneVar.push("");
+  cols.abTl.push(abbrevOf(form.tl, deriveTlNotone));
+  cols.abPoj.push(poj ? abbrevOf(poj, derivePojNotone) : "");
+  cols.abTps.push("");
+  ids.push(form.id);
+  freq.push(0);
+  flags.push(form.variant ? 2 : 1);
+  synthesized++;
 }
 
 const count = cols.tl.length;
-const out = { meta: { source: "kautian.csv", count, format: 2 }, freq, flags };
+const out = { meta: { source: "kautian.csv+ods", count, format: 3 }, id: ids, freq, flags };
 for (const k of Object.keys(SHIP)) out[k] = cols[k].join("\n");
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -129,15 +237,16 @@ const mismatchLines = Object.entries(qa.mismatch).flatMap(([name, list]) => [
 ]);
 const report = [
   `build-data report — ${new Date().toISOString()}`,
-  `format: 2 (string-pool, runtime-derived notone/zhu)`,
-  `entries: ${count}`,
+  `format: 3 (string-pool + entry ids, runtime-derived notone/zhu)`,
+  `entries (rows): ${count} — distinct entry ids: ${new Set(ids).size}`,
+  `ODS headword forms: ${odsForms.size} (csv-covered: ${covered.size}, synthesized: ${synthesized}, synth failures: ${synthFailures})`,
+  `CSV rows dropped (no entry id — names/dialect forms): ${droppedCsv}`,
   `json bytes: ${jsonBytes} (${(jsonBytes / 1048576).toFixed(2)} MB)`,
   `gzip bytes: ${gzBytes} (${(gzBytes / 1048576).toFixed(2)} MB)`,
   `build time: ${elapsed} ms`,
   ``,
   `-- QA --`,
   `empty required fields: ${JSON.stringify(qa.emptyFields)}`,
-  `duplicate (tl+hanzi) rows: ${qa.dupes}`,
   `unknown TPS chars: ${[...qa.unknownTps].map(([c, x]) => `${c}(U+${c.codePointAt(0).toString(16).toUpperCase()})×${x}`).join(" ") || "none"}`,
   ...mismatchLines,
   ``,

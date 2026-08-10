@@ -22,6 +22,7 @@
 - [x] Stage 3：Extension shell + UI（`src/content/`、manifest、esbuild）
 - [ ] Stage 4：整合驗證與打包（zip 已產出；授權已確認 CC BY-ND 3.0 TW ✅，README 已加姓名標示與非官方聲明；待真站手動驗證、icons、商店頁姓名標示）
 - [x] 效能優化：`PERF_EVALUATION.md` 方案 C+（資料 -40%、冷啟動 -55%、無 Map lazy 索引）
+- [x] 詞條直連（格式 v3）：從 kautian.ods join 詞目 id，點擊直連 `/su/<id>/`；選單僅含詞目詞（含又唸作/俗唸作/合音唸作/異用字，依 id 去重）；移除 tag badge；資料再降至 3.08MB
 
 ## Part 2：羅馬字 hover popup（Part 1 上架後才開始）
 

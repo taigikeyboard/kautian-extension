@@ -9,7 +9,7 @@ export const CONFIG = {
   DATA_URL: "data/kautian.min.json",
   DEBOUNCE_MS: 120,
   LIMIT: 20,
-  searchHref(locale, tl) {
-    return `/${locale}/tshiau/?lui=tai_su&tsha=${encodeURIComponent(tl)}`;
+  entryHref(locale, id) {
+    return `/${locale}/su/${id}/`;
   },
 };

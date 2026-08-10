@@ -24,7 +24,7 @@ function init() {
 
   const ui = createUI({
     input,
-    buildHref: (res) => CONFIG.searchHref(locale, res.tl),
+    buildHref: (res) => CONFIG.entryHref(locale, res.id),
     onFill: (res) => {
       input.value = res.tl;
       // hand control back to the host page (synthetic input event)

@@ -36,7 +36,7 @@ Non-goals (explicitly excluded from v1):
   - Keyword field: `<input type="search" name="tsha" id="id_tsha" maxlength="50" required>`
   - Category radio: `name="lui"`, values `tai_su` (Taiwanese word, default) / `tai_ku` / `hua_su` / `hua_ku`
 - Search results URL: `/{locale}/tshiau/?lui=tai_su&tsha=<keyword>`
-- Entry pages: `/{locale}/su/<id>/`. **kautian.csv does not contain this id**, so clicking a suggestion navigates to an "exact-search URL" rather than the entry page (see §7.4 and open question Q8).
+- Entry pages: `/{locale}/su/<id>/`. kautian.csv does not contain this id, but **kautian.ods does** (詞目 sheet, `詞目id` column — verified to match the site URLs); the build joins it in and suggestions link straight to entry pages (§7.4, Q8 resolved).
 - There are two locale paths: `/zh-hant/` (Han-Roman UI) and `/und-hani/` (all-Hanzi UI). The extension must derive the prefix from the current URL and support both.
 - The site's front-end JS (`tshiau.js`) only handles voice-search recording; **there is no native autocomplete** — the dropdown container must be self-built (unlike ebird-extension, which borrows the host site's dropdown).
 
@@ -274,7 +274,7 @@ Each row (`<a>`): Hanzi (primary), Tâi-lô (with tones), POJ, Taiwanese Phoneti
 
 ### 7.4 Selection Behavior
 
-- Click/Enter: navigate to `/{current locale}/tshiau/?lui=tai_su&tsha=${encodeURIComponent(tl)}` (native `<a href>` behavior; middle-click/⌘click supported for free). An exact search on the entry's full Tâi-lô; the site's results page is usually that exact entry.
+- Click/Enter: navigate directly to the entry page `/{current locale}/su/{id}/` (native `<a href>` behavior; middle-click/⌘click supported for free). Entry ids come from the kautian.ods 詞目 sheet, joined at build time (see the update note under Q8).
 - `Shift+Enter`: only fill the Tâi-lô into the input without navigating (synthetic `input` event to notify the site's JS — reusing ebird's hand-back-control pattern).
 
 ### 7.5 Coexistence with the Host Site
@@ -432,7 +432,7 @@ Golden query samples (into fixtures): `sutiann`, `su-tiann`, `sū-tiānn`, `su7t
 5. **Firefox**: include in v1 (MV3 WAR/ESM differences cost roughly a few days)?
 6. **`kautian_accent_mask` / `kautian_name`**: once semantics are confirmed, should they participate in ranking (down-rank personal/place names?).
 7. **Full disabling when `lui != tai_su`**: or at least provide partial suggestions from the hanzi field in `hua_su` mode?
-8. **No entry id**: is navigating to the search-results page instead of the entry page acceptable? (Fallback: parse the site's sitemap to build a tl→id mapping table; adds build complexity and fragility, v1 leans no.)
+8. **No entry id**: ✅ resolved 2026-08-10 — kautian.ods carries entry ids (詞目 sheet). Data format v3 joins them at build time: 詞目 + 又唸作/俗唸作/合音唸作 + 異用字 forms map to their parent entry (kan-tann/kan-ta/干焦/乾焦 → /su/448/, live-verified); entry type 近反義詞不單列詞目者 excluded (404s); CSV rows with no entry id (names, dialect-table forms) are dropped so the dropdown shows dictionary headword forms only; ODS forms missing from the CSV are synthesized with taigi-converter. Results are deduplicated by entry id.
 9. **Homographs (same tl, different hanzi)** — dropdown merge strategy: separate rows (current plan) or one merged row with multiple hanzi?
 
 ## 14. Part 2 Interface Note (out of scope this phase)
