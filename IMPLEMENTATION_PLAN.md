@@ -236,7 +236,7 @@ input(debounce 120ms) → detect (§5.1) → normalize (§5.2–5.4)
 | 6 | Substring (notone / hanzi contains) |
 | 7 | Fuzzy (§6.4) |
 
-Within the same tier: `kautian_main` first → `is_variant` last → `frequency` descending → shorter length first. Before hanzi matching, apply variant-character folding such as `台→臺` (following ebird's experience; start the fold table small).
+Within the same tier: `kautian_main` first → `is_variant` last → shorter length first; remaining ties keep stable candidate order. (Frequency ranking was removed by request — data format v4 no longer ships the column.) Before hanzi matching, apply variant-character folding such as `台→臺` (following ebird's experience; start the fold table small).
 
 ### 6.4 Fuzzy (R1)
 
@@ -247,7 +247,7 @@ Within the same tier: `kautian_main` first → `is_variant` last → `frequency`
 ### 6.5 Regex Mode (R2)
 
 - Syntax: input starting with `/`, either `/pat/` or unclosed `/pat`; default flags `iu`.
-- Fields matched: `tl` (with tones), `tl_notone`, `poj`, `hanzi` — a row qualifies if any of the four fields matches, sorted by frequency (no tiers).
+- Fields matched: `tl` (with tones), `tl_notone`, `poj`, `hanzi` — a row qualifies if any of the four fields matches, in data order (no tiers, no frequency ranking).
 - **Safety guard (ReDoS)**: pattern length capped at 64; `new RegExp` wrapped in try/catch (on invalid pattern, show the error in the hint row and do not query); the linear scan checks the time budget every 2,000 rows (abort a query exceeding 80ms and show "results incomplete"); if backreferences are ever needed, re-evaluate an RE2-family wasm (not in v1; listed as a risk in §12).
 - Regex-mode input is **not** written back to the site's form submission (`tsha` is a site parameter; the site does not understand regex; the hint row notes "local filtering only").
 

@@ -26,10 +26,10 @@ const SUBSTR_CAP = 100;
 const STR_COLS = ["tl", "hanzi", "poj", "tps", "tlNum", "tpsNotoneVar", "abTl", "abPoj", "abTps"];
 
 function unpack(packed) {
-  if (packed?.meta?.format !== 3) {
+  if (packed?.meta?.format !== 4) {
     throw new Error(`unsupported data format: ${packed?.meta?.format}`);
   }
-  const d = { id: packed.id, freq: packed.freq, flags: packed.flags };
+  const d = { id: packed.id, flags: packed.flags };
   for (const k of STR_COLS) d[k] = packed[k].split("\n");
   return d;
 }
@@ -158,12 +158,13 @@ export function createEngine(packed) {
       hanzi: d.hanzi[i],
       poj: d.poj[i],
       tps: d.tps[i],
-      freq: d.freq[i],
       main: (d.flags[i] & 1) !== 0,
       variant: (d.flags[i] & 2) !== 0,
     };
   }
 
+  // No frequency ranking (by request): tier → main entry → non-variant →
+  // shorter word; remaining ties keep stable candidate order.
   function finalize(tiers, limit) {
     const entries = [...tiers.entries()]; // [idx, tier]
     entries.sort((a, b) => {
@@ -174,7 +175,6 @@ export function createEngine(packed) {
       const va = d.flags[a[0]] & 2;
       const vb = d.flags[b[0]] & 2;
       if (va !== vb) return va - vb; // variant readings last
-      if (d.freq[a[0]] !== d.freq[b[0]]) return d.freq[b[0]] - d.freq[a[0]];
       return d.tl[a[0]].length - d.tl[b[0]].length;
     });
     // one row per entry id — the best-ranked form represents the entry
@@ -265,7 +265,7 @@ export function createEngine(packed) {
         re,
         (i) => hits.push(i)
       );
-      hits.sort((a, b) => d.freq[b] - d.freq[a]);
+      // scan order (data order) — no frequency ranking
       const seen = new Set();
       const results = [];
       for (const i of hits) {

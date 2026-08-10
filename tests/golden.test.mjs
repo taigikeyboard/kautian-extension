@@ -79,11 +79,11 @@ test("prefix: sutia* completion", () => {
   assert.ok(r.results.every((x) => x.tier <= TIER.PREFIX || x.tier >= TIER.SUBSTR));
 });
 
-test("abbreviation: tk (1,244 collisions, frequency-ranked)", () => {
+test("abbreviation: tk (many collisions)", () => {
   const r = engine.query("tk");
-  assert.equal(r.results[0].hanzi, "逐家"); // highest-frequency tk abbreviation
+  assert.ok(r.results.length > 0);
   assert.equal(r.results[0].tier, TIER.ABBREV);
-  // the low-frequency 同居 is also in the full abbreviation hit set
+  // 同居 is in the full abbreviation hit set
   const all = engine.query("tk", { limit: 2000 });
   assert.ok(hanzis(all).includes("同居"));
 });
@@ -145,7 +145,9 @@ test("empty input", () => {
   assert.equal(engine.query("   ").results.length, 0);
 });
 
-test("ranking: main entry / frequency first", () => {
+test("ranking: toned-exact and main entries first (no frequency)", () => {
   const r = engine.query("e5");
-  assert.equal(r.results[0].hanzi, "的"); // ê has the highest frequency (184,693)
+  assert.ok(r.results.length > 0);
+  assert.equal(r.results[0].tier, TIER.TONED);
+  assert.equal(r.results[0].tl.toLowerCase(), "ê");
 });

@@ -1,7 +1,8 @@
-// kautian.csv + kautian.ods → data/kautian.min.json (format v3) + data/build-report.txt
+// kautian.csv + kautian.ods → data/kautian.min.json (format v4) + data/build-report.txt
 // IMPLEMENTATION_PLAN.md §4, PERF_EVALUATION.md option C+. Zero dependencies, Node 22+.
 //
-// Format v3 = v2 (string-pool, runtime-derived notone/zhu) + entry ids:
+// Format v4 = v2 (string-pool, runtime-derived notone/zhu) + entry ids,
+// no frequency column (ranking does not use word frequency):
 // - Every shipped row is joined to a dictionary entry id from kautian.ods
 //   (詞目 sheet + variant-reading sheets 又唸作/俗唸作/合音唸作 + variant-spelling
 //   sheet 異用字), so the UI can link straight to /su/<id>/.
@@ -132,12 +133,10 @@ const SHIP = {
 const QA_COLS = {
   tlNotone: need("tl_notone"), pojNotone: need("poj_notone"), tpsNotone: need("tps_notone"),
 };
-const iFreq = need("frequency");
 const iMain = need("kautian_main");
 
 const cols = Object.fromEntries(Object.keys(SHIP).map((k) => [k, []]));
 const ids = [];
-const freq = [];
 const flags = []; // bit0: main entry, bit1: variant reading/spelling
 const errors = [];
 const qa = { emptyFields: {}, unknownTps: new Map(), mismatch: { tlNotone: [], pojNotone: [], tpsNotone: [] } };
@@ -163,7 +162,6 @@ for (const r of rows) {
     }
   }
   ids.push(hit.id);
-  freq.push(Number(get(iFreq)) || 0);
   flags.push((get(iMain) === "True" ? 1 : 0) | (hit.variant ? 2 : 0));
 
   // QA: runtime derivation vs CSV (hard gate)
@@ -215,13 +213,12 @@ for (const [k, form] of odsForms) {
   cols.abPoj.push(poj ? abbrevOf(poj, derivePojNotone) : "");
   cols.abTps.push("");
   ids.push(form.id);
-  freq.push(0);
   flags.push(form.variant ? 2 : 1);
   synthesized++;
 }
 
 const count = cols.tl.length;
-const out = { meta: { source: "kautian.csv+ods", count, format: 3 }, id: ids, freq, flags };
+const out = { meta: { source: "kautian.csv+ods", count, format: 4 }, id: ids, flags };
 for (const k of Object.keys(SHIP)) out[k] = cols[k].join("\n");
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -237,7 +234,7 @@ const mismatchLines = Object.entries(qa.mismatch).flatMap(([name, list]) => [
 ]);
 const report = [
   `build-data report — ${new Date().toISOString()}`,
-  `format: 3 (string-pool + entry ids, runtime-derived notone/zhu)`,
+  `format: 4 (string-pool + entry ids, runtime-derived notone/zhu, no frequency)`,
   `entries (rows): ${count} — distinct entry ids: ${new Set(ids).size}`,
   `ODS headword forms: ${odsForms.size} (csv-covered: ${covered.size}, synthesized: ${synthesized}, synth failures: ${synthFailures})`,
   `CSV rows dropped (no entry id — names/dialect forms): ${droppedCsv}`,
