@@ -11,7 +11,9 @@ const DATA = join(dirname(fileURLToPath(import.meta.url)), "..", "data", "kautia
 if (!existsSync(DATA)) {
   throw new Error("missing data/kautian.min.json — run npm run build:data first");
 }
-const engine = createEngine(JSON.parse(readFileSync(DATA, "utf8")));
+const packed = JSON.parse(readFileSync(DATA, "utf8"));
+const engine = createEngine(packed);
+const tlNums = packed.tlNum.split("\n");
 
 const tls = (r) => r.results.map((x) => x.tl);
 const hanzis = (r) => r.results.map((x) => x.hanzi);
@@ -55,6 +57,14 @@ test("toned exact: tone digits / tone diacritics", () => {
   assert.equal(b.results[0].hanzi, "是");
   const c = engine.query("tong5-ku1");
   assert.ok(hanzis(c).includes("同居"));
+});
+
+test("explicit tone does not fall back to toneless search", () => {
+  const r = engine.query("tsa2", { limit: 200 });
+  assert.ok(r.results.length > 0);
+  assert.equal(r.results[0].hanzi, "早");
+  assert.ok(r.results.every((x) => tlNums[x.i].includes("tsa2")));
+  assert.ok(!hanzis(r).includes("在"));
 });
 
 test("case-insensitive + toneless: SI → high-frequency si* words", () => {

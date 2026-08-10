@@ -196,12 +196,13 @@ export function createEngine(packed) {
   }
 
   function queryLatin(input, tiers) {
-    const { pojKey, tlKey, toned, tonedTl } = normalizeLatin(input);
+    const { pojKey, tlKey, toned, tonedTl, hasTone } = normalizeLatin(input);
     // Always try toned-exact: an unmarked romanization is itself a valid
     // tone-1 spelling (khuann ≡ tone 1), so an exact toned hit outranks
     // toneless matches. Both the raw key and its POJ→TL-folded twin are tried.
     searchExact(ixToned(), toned, (i) => add(tiers, i, TIER.TONED));
     if (tonedTl !== toned) searchExact(ixToned(), tonedTl, (i) => add(tiers, i, TIER.TONED));
+    if (hasTone) return;
     // the prefix index's exact flag serves tiers 2 and 3 in one pass
     searchPrefix(ixLatin(), tlKey, (i, exact) =>
       add(tiers, i, exact ? TIER.EXACT : TIER.PREFIX));
