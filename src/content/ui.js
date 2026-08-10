@@ -27,7 +27,8 @@ export function createUI({ input, buildHref, onFill }) {
     const r = input.getBoundingClientRect();
     box.style.left = `${r.left + window.scrollX}px`;
     box.style.top = `${r.bottom + window.scrollY + 2}px`;
-    box.style.minWidth = `${r.width}px`;
+    // lock to the input's width — long entries (proverbs) must not widen the box
+    box.style.width = `${r.width}px`;
   }
 
   function hide() {
