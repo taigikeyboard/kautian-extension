@@ -1,4 +1,4 @@
-// Load-time derived columns (PERF_EVALUATION.md, option C+)
+// Load-time derived search columns.
 // These functions are the correctness foundation of data format v2: the build
 // script does a full comparison of "derived result vs CSV column" as QA and
 // fails the build on any mismatch — data or rule drift blows up loudly here

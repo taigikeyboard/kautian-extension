@@ -1,4 +1,4 @@
-// Input type detection (IMPLEMENTATION_PLAN.md §5.1)
+// Input type detection.
 import { isBopomofo } from "./zhuyin-fold.js";
 
 const CJK_RE = /[㐀-䶿一-鿿豈-﫿\u{20000}-\u{2ffff}]/u;

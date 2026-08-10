@@ -1,4 +1,4 @@
-// Two-sided Zhuyin approximate-sound folding (IMPLEMENTATION_PLAN.md §5.4)
+// Two-sided Zhuyin approximate-sound folding.
 //
 // Data side:  each tps_notone character goes through DATA_FOLD → zhu_key
 //             (derived at load time; see derive.js / engine.js)

@@ -1,4 +1,4 @@
-// Regex mode (IMPLEMENTATION_PLAN.md §6.5)
+// Guarded raw regular-expression matching.
 // Syntax: raw pattern, matching the target site's search field; default flags iu.
 // Guards: pattern length cap, try/catch compile, scan time budget with abort.
 

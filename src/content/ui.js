@@ -1,4 +1,4 @@
-// Dropdown UI (IMPLEMENTATION_PLAN.md §7)
+// Accessible dropdown UI.
 // Principles: <a href> result rows, textContent instead of innerHTML,
 // keydown/pointerdown each bound exactly once at init, full ARIA combobox pattern.
 // Keep status messages brief and clear in English.

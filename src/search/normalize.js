@@ -1,4 +1,4 @@
-// User-input normalization (IMPLEMENTATION_PLAN.md §5.2–5.3)
+// User-input normalization.
 import { normalizeToTl } from "../../vendor/taigi-converter/src/phonetics.js";
 
 const COMBINING_RE = /[̀-ͯ]/g;

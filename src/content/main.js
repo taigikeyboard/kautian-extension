@@ -1,5 +1,5 @@
 // Content-script entry: mounting, lazy data loading, query routing
-// (IMPLEMENTATION_PLAN.md §7.1, §7.5)
+// Mounts the enhanced search UI on the dictionary search form.
 import { CONFIG } from "./config.js";
 import { createEngine } from "../search/engine.js";
 import { createUI } from "./ui.js";

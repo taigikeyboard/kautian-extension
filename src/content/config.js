@@ -1,5 +1,5 @@
 // Single source of truth for selectors / URL templates / constants
-// (IMPLEMENTATION_PLAN.md §8.2)
+// Centralized selectors, URLs, and search limits.
 export const CONFIG = {
   INPUT_ID: "id_tsha",
   FORM_NAME: "tshiautuann",

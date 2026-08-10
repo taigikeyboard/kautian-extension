@@ -12,7 +12,7 @@ await build({
 cpSync("src/content/styles.css", "dist/content.css");
 
 // Gate: make sure the vendor 1.5MB dictionary.js did not sneak into the bundle
-// (IMPLEMENTATION_PLAN.md §2.4)
+// Keep the generated content script small.
 const size = statSync("dist/content.js").size;
 if (size > 200 * 1024) {
   console.error(`FAIL: dist/content.js is ${(size / 1024).toFixed(0)}KB — check whether vendor dictionary.js leaked in`);

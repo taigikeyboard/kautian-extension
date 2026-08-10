@@ -1,4 +1,4 @@
-// Performance measurements (IMPLEMENTATION_PLAN.md §9 targets)
+// Search performance measurements.
 // exact/prefix < 5ms, substring+fuzzy < 30ms, regex worst < 80ms (budget abort)
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

@@ -1,4 +1,4 @@
-// Fuzzy matching (IMPLEMENTATION_PLAN.md §6.4)
+// Fuzzy matching.
 // Damerau-Levenshtein (OSA variant), banded DP with early abort.
 
 export function fuzzyThreshold(len) {

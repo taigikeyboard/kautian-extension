@@ -1,5 +1,5 @@
 // kautian.csv + kautian.ods → data/kautian.min.json (format v4) + data/build-report.txt
-// IMPLEMENTATION_PLAN.md §4, PERF_EVALUATION.md option C+. Zero dependencies, Node 22+.
+// Zero-dependency data build for Node 22+.
 //
 // Format v4 = v2 (string-pool, runtime-derived notone/zhu) + entry ids,
 // no frequency column (ranking does not use word frequency):
@@ -268,6 +268,6 @@ if (errors.length > 0) {
   process.exit(1);
 }
 if (jsonBytes > 8 * 1048576) {
-  console.error("FAIL: JSON exceeds the 8MB limit (IMPLEMENTATION_PLAN.md §4.2)");
+  console.error("FAIL: JSON exceeds the 8MB package limit");
   process.exit(1);
 }

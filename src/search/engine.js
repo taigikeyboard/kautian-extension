@@ -1,5 +1,5 @@
 // Search engine: data format v2 (string-pool) + Map-free lazy sorted indexes
-// (IMPLEMENTATION_PLAN.md §6, PERF_EVALUATION.md option C+)
+// Pure search engine with compact string-pool data and lazy sorted indexes.
 // Pure-function module — no DOM, no chrome APIs; testable directly in Node.
 import { classify } from "./detect.js";
 import { normalizeLatin, foldHanzi, normalizeTps } from "./normalize.js";
