@@ -28,9 +28,9 @@ const CASES = [
   ["zhuyin fold", "ㄙㄨㄉㄧㄚ"],
   ["fuzzy hit", "sualakku"],
   ["fuzzy miss", "zzzzzzz"],
-  ["regex simple", "/^tshiau/"],
-  ["regex greedy", "/(t+s+h+)+x/"],
-  ["regex wide", "/a/"],
+  ["regex simple", "^tshiau"],
+  ["regex greedy", "(t+s+h+)+x"],
+  ["regex wide", "a"],
 ];
 
 for (const [label, q] of CASES) {

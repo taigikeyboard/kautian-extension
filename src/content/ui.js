@@ -1,8 +1,7 @@
 // Dropdown UI (IMPLEMENTATION_PLAN.md §7)
 // Principles: <a href> result rows, textContent instead of innerHTML,
 // keydown/pointerdown each bound exactly once at init, full ARIA combobox pattern.
-// Note: user-visible strings stay in Chinese — the target audience reads the
-// MoE dictionary in Chinese.
+// Keep status messages brief and clear in English.
 
 export function createUI({ input, buildHref, onFill }) {
   const listId = "stnp-listbox";
@@ -75,12 +74,12 @@ export function createUI({ input, buildHref, onFill }) {
     active = -1;
 
     if (state.type === "loading") {
-      addHint("詞庫載入中…");
+      addHint("Loading dictionary…");
       show();
       return;
     }
     if (state.error) {
-      addHint(state.error === "too-long" ? "regex 太長（上限 64 字元）" : "無效的 regex");
+      addHint(state.error === "too-long" ? "Regex too long (max 64 characters)." : "Invalid regex.");
       show();
       return;
     }
@@ -115,8 +114,8 @@ export function createUI({ input, buildHref, onFill }) {
       box.appendChild(row);
       rows.push(row);
     });
-    if (state.mode === "regex") {
-      addHint(state.truncated ? "regex 模式（僅本機篩選）— 結果不完整" : "regex 模式（僅本機篩選）");
+    if (state.truncated) {
+      addHint("Results may be incomplete.");
     }
     show();
   }

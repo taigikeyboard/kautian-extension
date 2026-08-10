@@ -235,6 +235,7 @@ input(debounce 120ms) → detect (§5.1) → normalize (§5.2–5.4)
 | 5 | Zhuyin approximate sound (zhu_key exact/prefix) |
 | 6 | Substring (notone / hanzi contains) |
 | 7 | Fuzzy (§6.4) |
+| 8 | Raw regex match (§6.5) |
 
 Within the same tier: `kautian_main` first → `is_variant` last → shorter length first; remaining ties keep stable candidate order. (Frequency ranking was removed by request — data format v4 no longer ships the column.) Before hanzi matching, apply variant-character folding such as `台→臺` (following ebird's experience; start the fold table small).
 
@@ -244,12 +245,13 @@ Within the same tier: `kautian_main` first → `is_variant` last → shorter len
 - Candidate pruning: bucket by length (compare only when |len difference| ≤ threshold), plus banded DP with early termination. Full scan of 57k entries estimated <30ms worst case; if exceeded, add a bigram inverted index as a pre-filter (decide after Stage 2 measurement, not built up front).
 - Enabled only for the romanization path; error tolerance for Hanzi/TPS is carried by the fold tables.
 
-### 6.5 Regex Mode (R2)
+### 6.5 Unified Raw Regex (R2)
 
-- Syntax: input starting with `/`, either `/pat/` or unclosed `/pat`; default flags `iu`.
-- Fields matched: `tl` (with tones), `tl_notone`, `poj`, `hanzi` — a row qualifies if any of the four fields matches, in data order (no tiers, no frequency ranking).
+- Syntax: the site's raw pattern syntax, such as `^tshiau`; default flags `iu`. No `/…/` wrapper or mode switch is required.
+- Plain input retains normalized, prefix, abbreviation, and fuzzy search; its literal regex matches are merged at tier 8. Input containing regex operators follows regex semantics directly so anchors and other operators are not treated as fuzzy-search typos.
+- Baseline fields match the site: `hanzi` and spaced numeric Tâi-lô (`tl_num`, with hyphens normalized to spaces). Enhanced matching additionally covers marked `tl`, `tl_notone`, and `poj`.
 - **Safety guard (ReDoS)**: pattern length capped at 64; `new RegExp` wrapped in try/catch (on invalid pattern, show the error in the hint row and do not query); the linear scan checks the time budget every 2,000 rows (abort a query exceeding 80ms and show "results incomplete"); if backreferences are ever needed, re-evaluate an RE2-family wasm (not in v1; listed as a risk in §12).
-- Regex-mode input is **not** written back to the site's form submission (`tsha` is a site parameter; the site does not understand regex; the hint row notes "local filtering only").
+- The raw input remains compatible with the site's `tsha` form parameter.
 
 ---
 
@@ -447,3 +449,27 @@ Hover popup showing POJ/TPS for MoE romanization: at that point the data pipelin
 
 Success criteria: the project is presented as「教典鬥搜揣」, repository/package artifacts use
 `kautian-extension`, `sutian.moe.edu.tw` integration remains unchanged, and all tests pass.
+
+## Unified raw-regex search follow-up
+
+1. **Specify** — accept the site's raw regex syntax without `/…/`, while preserving existing normalized and fuzzy matches. ✅
+2. **Test** — cover raw anchors, invalid expressions, and ordinary-query compatibility. ✅
+3. **Implement** — run guarded regex matching through the same query path and merge deduplicated results after ranked matches. ✅
+4. **Verify** — run unit/golden tests, build, and compare `^tshiau` behavior with the target site. ✅
+
+Success criteria: `^tshiau` works directly, ordinary inputs such as `tshiau` and fuzzy inputs retain
+their current behavior, invalid regex remains guarded, and users no longer need a regex mode delimiter.
+
+## Chrome Web Store assets and privacy
+
+1. **Icons** — add 16, 32, 48, and 128 px package icons to the manifest. ✅
+2. **Privacy** — publish an English policy that accurately states the extension's local-only data handling. ✅
+3. **Package** — include only the four declared icons in the store ZIP whitelist. ✅
+4. **Verify** — validate the manifest, tests, build, and exact archive contents. ✅
+
+## Broad Hanzi result window
+
+1. **Limit** — show up to 200 ranked suggestions in the scrollable dropdown. ✅
+2. **Recall** — always collect up to 100 additional Hanzi substring candidates, independent of prefix count. ✅
+3. **Regression** — verify that `早` exposes `𠢕早` and common-character substring hits retain the substring tier. ✅
+4. **Verify** — run tests, benchmarks, build, and package checks. ✅

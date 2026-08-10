@@ -135,6 +135,11 @@ const QA_COLS = {
 };
 const iMain = need("kautian_main");
 
+// Match the target site's regex representation: numeric tones with every
+// syllable separator normalized to one space.
+const toSiteTlNum = (tl) =>
+  toToneNumber(tl).toLowerCase().replace(/--|[-\s]+/g, " ").trim();
+
 const cols = Object.fromEntries(Object.keys(SHIP).map((k) => [k, []]));
 const ids = [];
 const flags = []; // bit0: main entry, bit1: variant reading/spelling
@@ -161,6 +166,7 @@ for (const r of rows) {
       qa.emptyFields[name] = (qa.emptyFields[name] || 0) + 1;
     }
   }
+  cols.tlNum[cols.tlNum.length - 1] = toSiteTlNum(cols.tl.at(-1));
   ids.push(hit.id);
   flags.push((get(iMain) === "True" ? 1 : 0) | (hit.variant ? 2 : 0));
 
@@ -199,7 +205,7 @@ for (const [k, form] of odsForms) {
   try {
     poj = convert(form.tl, "tl", "poj");
     tps = convert(form.tl, "tl", "zhuyin").replace(/\s+/g, "");
-    tlNum = toToneNumber(form.tl).toLowerCase().replace(/--|[-\s]+/g, "");
+    tlNum = toSiteTlNum(form.tl);
   } catch {
     synthFailures++; // keep the row anyway — tl/hanzi search still works
   }

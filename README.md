@@ -7,7 +7,7 @@ Frequently-Used Taiwan Taiwanese" (https://sutian.moe.edu.tw/).
 Supported input: MoE Tâi-lô (case- and tone-insensitive; tone diacritics or tone numbers both work),
 Pe̍h-ōe-jī (POJ), Hanzi (台/臺 interchangeable), Taiwanese Phonetic Symbols (TPS),
 Zhuyin approximate-sound input (approximate lookup with a regular Zhuyin keyboard),
-initial-letter abbreviations (`tk` → tông-ku), plus fuzzy error tolerance and `/pattern/` regex mode.
+initial-letter abbreviations (`tk` → tông-ku), plus fuzzy error tolerance and raw regex patterns (`^tshiau`).
 
 ## Development
 

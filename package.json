@@ -2,7 +2,7 @@
   "name": "kautian-extension",
   "version": "0.1.0",
   "private": true,
-  "description": "Enhanced-search browser extension for the MoE Dictionary of Frequently-Used Taiwan Taiwanese",
+  "description": "Make searching the kautian website easier.",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -14,7 +14,7 @@
     "build": "npm run build:data && npm run build:js",
     "test": "node --test \"tests/*.test.mjs\"",
     "bench": "node tests/bench.mjs",
-    "package": "npm run build && rm -f kautian-extension.zip && zip -qr kautian-extension.zip manifest.json dist data/kautian.min.json && ls -la kautian-extension.zip"
+    "package": "npm run build && rm -f kautian-extension.zip && zip -q kautian-extension.zip manifest.json icons/icon16.png icons/icon32.png icons/icon48.png icons/icon128.png dist/content.js dist/content.css data/kautian.min.json && ls -la kautian-extension.zip"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

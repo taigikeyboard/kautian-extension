@@ -100,6 +100,15 @@ test("Hanzi: exact / prefix / 台→臺 folding", () => {
   assert.ok(hanzis(c).includes("沙鹿區"));
 });
 
+test("Hanzi substring: 早 can find 𠢕早 within the dropdown limit", () => {
+  const r = engine.query("早", { limit: 200 });
+  assert.ok(hanzis(r).includes("𠢕早"));
+
+  const common = engine.query("人", { limit: 200 });
+  const internal = common.results.find((x) => x.hanzi === "世人");
+  assert.equal(internal?.tier, TIER.SUBSTR);
+});
+
 test("TPS input: ㆠㄨㄣˊ → 文", () => {
   const r = engine.query("ㆠㄨㄣˊ");
   assert.ok(hanzis(r).includes("文"));
@@ -122,8 +131,8 @@ test("fuzzy: sualakku (missing h) → 沙鹿區", () => {
   assert.equal(hit.tier, TIER.FUZZY);
 });
 
-test("regex mode", () => {
-  const a = engine.query("/^tshiau/");
+test("raw regex is merged into ordinary search", () => {
+  const a = engine.query("^tshiau");
   assert.ok(a.results.length > 0);
   // the engine's regex scan includes tlNotone (toneless AND hyphenless)
   const notone = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-\s]+/g, "");
@@ -134,10 +143,25 @@ test("regex mode", () => {
         /^tshiau/i.test(x.poj) || /^tshiau/i.test(x.hanzi)
     )
   );
-  const b = engine.query("/[");
+  const b = engine.query("[");
   assert.equal(b.error, "invalid");
-  const c = engine.query("/^臺.語$/");
+  const c = engine.query("^臺.語$");
   assert.ok(c.results.every((x) => /^臺.語$/.test(x.hanzi)));
+
+  const ordinary = engine.query("tshiau");
+  assert.ok(ordinary.results.some((x) => x.tier <= TIER.PREFIX));
+});
+
+test("raw regex matches the site's spaced numeric Tâi-lô format", () => {
+  const ending = engine.query("iat4$", { limit: 200 });
+  assert.ok(ending.results.length > 0);
+  assert.ok(hanzis(ending).includes("結"));
+
+  const syllables = engine.query("^si[aptk][14]$", { limit: 200 });
+  assert.ok(syllables.results.length > 0);
+
+  const alternatives = engine.query("h(ue|e)2 tshia", { limit: 200 });
+  assert.ok(hanzis(alternatives).includes("火車"));
 });
 
 test("empty input", () => {

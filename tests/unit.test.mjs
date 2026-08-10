@@ -5,13 +5,17 @@ import { classify } from "../src/search/detect.js";
 import { normalizeLatin, foldHanzi, normalizeTps } from "../src/search/normalize.js";
 import { dataFold, queryFold } from "../src/search/zhuyin-fold.js";
 import { boundedDistance, fuzzyThreshold } from "../src/search/fuzzy.js";
-import { parsePattern } from "../src/search/regex-mode.js";
+import { hasRegexSyntax, parsePattern } from "../src/search/regex-mode.js";
+import { CONFIG } from "../src/content/config.js";
+
+test("dropdown result limit favors broad matching", () => {
+  assert.equal(CONFIG.LIMIT, 200);
+});
 
 test("classify: mode detection", () => {
   assert.equal(classify(""), "empty");
   assert.equal(classify("  "), "empty");
-  assert.equal(classify("/tsh.*u/"), "regex");
-  assert.equal(classify("/"), "empty"); // a lone / is not regex
+  assert.equal(classify("^tsh.*u"), "latin");
   assert.equal(classify("臺語"), "hanzi");
   assert.equal(classify("ㄙㄨ"), "bopomofo");
   assert.equal(classify("ㆠㄨㄣ"), "bopomofo");
@@ -82,9 +86,10 @@ test("boundedDistance: edit distance with transposition", () => {
 });
 
 test("parsePattern: regex guards", () => {
-  assert.ok(parsePattern("/tsh.*u/").re instanceof RegExp);
-  assert.ok(parsePattern("/tsh.*u").re instanceof RegExp); // unclosed also accepted
-  assert.equal(parsePattern("/[").error, "invalid");
-  assert.equal(parsePattern("//").error, "empty");
-  assert.equal(parsePattern("/" + "a".repeat(100)).error, "too-long");
+  assert.equal(hasRegexSyntax("tshiau"), false);
+  assert.equal(hasRegexSyntax("^tsh.*u$"), true);
+  assert.ok(parsePattern("^tsh.*u$").re instanceof RegExp);
+  assert.equal(parsePattern("[").error, "invalid");
+  assert.equal(parsePattern("").error, "empty");
+  assert.equal(parsePattern("a".repeat(100)).error, "too-long");
 });

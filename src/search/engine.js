@@ -6,7 +6,7 @@ import { normalizeLatin, foldHanzi, normalizeTps } from "./normalize.js";
 import { deriveTlNotone, derivePojNotone, deriveTpsNotone } from "./derive.js";
 import { queryFold, dataFold } from "./zhuyin-fold.js";
 import { fuzzyScan } from "./fuzzy.js";
-import { parsePattern, regexScan } from "./regex-mode.js";
+import { hasRegexSyntax, parsePattern, regexScan } from "./regex-mode.js";
 
 // Ranking tiers (§6.3)
 export const TIER = {
@@ -17,6 +17,7 @@ export const TIER = {
   ZHUYIN: 5, // Zhuyin approximate sound
   SUBSTR: 6, // substring
   FUZZY: 7, // fuzzy
+  REGEX: 8, // raw regular-expression match
 };
 
 const CANDIDATE_CAP = 50;
@@ -121,7 +122,7 @@ export function createEngine(packed) {
         pairs.push([a, i]);
         const b = stripJoin(d.poj[i]);
         if (b !== a) pairs.push([b, i]);
-        pairs.push([d.tlNum[i], i]);
+        pairs.push([d.tlNum[i].replace(/\s+/g, ""), i]);
         const t = d.tps[i].trim();
         if (t) pairs.push([t, i]);
       }
@@ -229,13 +230,11 @@ export function createEngine(packed) {
     const key = foldHanzi(input.trim());
     searchPrefix(ixHanzi(), key, (i, exact) =>
       add(tiers, i, exact ? TIER.EXACT : TIER.PREFIX));
-    if (tiers.size < CANDIDATE_CAP) {
-      let hits = 0;
-      for (let i = 0; i < n && hits < SUBSTR_CAP; i++) {
-        if (hanziFold[i].includes(key)) {
-          add(tiers, i, TIER.SUBSTR);
-          hits++;
-        }
+    let hits = 0;
+    for (let i = 0; i < n && hits < SUBSTR_CAP; i++) {
+      if (!tiers.has(i) && hanziFold[i].includes(key)) {
+        add(tiers, i, TIER.SUBSTR);
+        hits++;
       }
     }
   }
@@ -251,37 +250,28 @@ export function createEngine(packed) {
     }
   }
 
+  // Every non-empty input uses both the normalized search path and a guarded
+  // raw-regex scan. Ranked normalized hits stay first; regex expands the set.
   // → { mode, results, truncated?, error? }
   function query(input, { limit = 20 } = {}) {
     const mode = classify(input);
     if (mode === "empty") return { mode, results: [] };
 
-    if (mode === "regex") {
-      const { re, error } = parsePattern(input);
-      if (error) return { mode, results: [], error };
-      const hits = [];
-      const { truncated } = regexScan(
-        { tl: d.tl, tlNotone, poj: d.poj, hanzi: d.hanzi },
-        re,
-        (i) => hits.push(i)
-      );
-      // scan order (data order) — no frequency ranking
-      const seen = new Set();
-      const results = [];
-      for (const i of hits) {
-        if (seen.has(d.id[i])) continue;
-        seen.add(d.id[i]);
-        results.push(toResult(i, null));
-        if (results.length >= limit) break;
-      }
-      return { mode, truncated, results };
+    const tiers = new Map();
+    if (!hasRegexSyntax(input)) {
+      if (mode === "hanzi") queryHanzi(input, tiers);
+      else if (mode === "bopomofo") queryBopomofo(input, tiers);
+      else queryLatin(input, tiers);
     }
 
-    const tiers = new Map();
-    if (mode === "hanzi") queryHanzi(input, tiers);
-    else if (mode === "bopomofo") queryBopomofo(input, tiers);
-    else queryLatin(input, tiers);
-    return { mode, results: finalize(tiers, limit) };
+    const { re, error } = parsePattern(input);
+    if (error) return { mode, results: [], error };
+    const { truncated } = regexScan(
+      { tl: d.tl, tlNum: d.tlNum, tlNotone, poj: d.poj, hanzi: d.hanzi },
+      re,
+      (i) => add(tiers, i, TIER.REGEX)
+    );
+    return { mode, truncated, results: finalize(tiers, limit) };
   }
 
   return { query, size: n };
