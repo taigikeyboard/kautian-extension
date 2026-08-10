@@ -21,4 +21,4 @@ package:
 	npm run package
 
 clean:
-	rm -rf data dist sutian-plus.zip
+	rm -rf data dist kautian-extension.zip

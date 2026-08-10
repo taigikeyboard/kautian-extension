@@ -48,7 +48,7 @@ function init() {
       })
       .catch((err) => {
         loading = false;
-        console.warn("[sutian-plus] failed to load lexicon:", err.message);
+        console.warn("[kautian-extension] failed to load lexicon:", err.message);
         ui.hide();
       });
   }

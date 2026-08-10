@@ -1,4 +1,4 @@
-# Sutian+
+# 教典鬥搜揣
 
 A browser extension (Chrome MV3, zero permissions, zero runtime dependencies) that adds enhanced
 search suggestions to the search box of the Ministry of Education (MoE) "Dictionary of
@@ -17,7 +17,7 @@ npm install          # only esbuild (devDependency)
 npm run build        # build:data (CSV → data/kautian.min.json) + build:js (esbuild bundle)
 npm test             # node:test: unit + golden (requires build:data first)
 npm run bench        # performance measurements
-npm run package      # produces sutian-plus.zip (for store upload)
+npm run package      # produces kautian-extension.zip (for store upload)
 ```
 
 A Makefile wraps the same commands: `make install`, `make build`, `make test`, `make bench`,
@@ -40,6 +40,6 @@ Local install: after `npm run build`, Chrome → `chrome://extensions` → Devel
   [Creative Commons Attribution-NoDerivs 3.0 Taiwan license](https://creativecommons.org/licenses/by-nd/3.0/tw/).
   The MoE content (Tâi-lô, Hanzi, TPS headword forms) is redistributed verbatim;
   compliance notes are in IMPLEMENTATION_PLAN.md §11.
-- **Sutian+ is an unofficial third-party tool and is not affiliated with or endorsed by the
+- **教典鬥搜揣 is an unofficial third-party tool and is not affiliated with or endorsed by the
   Ministry of Education.**
 - `vendor/taigi-converter`, `vendor/ebird-extension`: MIT (git submodules).

@@ -1,4 +1,4 @@
-# Sutian+ Enhanced Search Browser Extension — Implementation Plan (Part 1)
+# 教典鬥搜揣 Enhanced Search Browser Extension — Implementation Plan (Part 1)
 
 > Document purpose: this is the complete pre-implementation design plan, for cross-review by humans and codex.
 > **No code is written in this phase.** Part 2 (romanization hover popup showing Pe̍h-ōe-jī / Taiwanese Phonetic Symbols) is out of scope for this document; only an interface note is left in §13.
@@ -292,7 +292,7 @@ Each row (`<a>`): Hanzi (primary), Tâi-lô (with tones), POJ, Taiwanese Phoneti
 ```json
 {
   "manifest_version": 3,
-  "name": "Sutian+ 臺灣台語辭典增強搜尋",
+  "name": "教典鬥搜揣",
   "version": "0.1.0",
   "description": "為教育部臺灣台語常用詞辭典加上模糊、正規表示式與多音標系統即時搜尋建議",
   "permissions": [],
@@ -315,7 +315,7 @@ Key points: zero permissions, zero host_permissions, WAR open only to the sutian
 ### 8.2 Directory Structure
 
 ```
-sutian-plus/
+kautian-extension/
 ├── manifest.json
 ├── scripts/build-data.mjs        # CSV → data/kautian.min.json
 ├── src/
@@ -409,7 +409,7 @@ Golden query samples (into fixtures): `sutiann`, `su-tiann`, `sū-tiānn`, `su7t
   1. Attribution in README, the store listing, and the extension description: name the source
      (MoE "Dictionary of Frequently-Used Taiwan Taiwanese"), link the license
      (CC BY-ND 3.0 TW), and link the source site.
-  2. State clearly that Sutian+ is an unofficial third-party tool, not affiliated with or
+  2. State clearly that 教典鬥搜揣 is an unofficial third-party tool, not affiliated with or
      endorsed by the MoE.
 
 ## 12. Risk Register
@@ -438,3 +438,12 @@ Golden query samples (into fixtures): `sutiann`, `su-tiann`, `sū-tiānn`, `su7t
 ## 14. Part 2 Interface Note (out of scope this phase)
 
 Hover popup showing POJ/TPS for MoE romanization: at that point the data pipeline from this phase (tl→poj/tps lookup in the same `kautian.min.json`) and the content-script mounting framework can be fully reused; only entry-page DOM scanning and a popup component need to be added. This phase's code organization (search/ and content/ separation) already reserves room for it.
+# Rename plan: kautian-extension / 教典鬥搜揣
+
+1. **Inventory** — identify branding and repository-name references without changing the target-site domain. ✅
+2. **Implement** — update manifests, package/archive names, runtime labels, and documentation. ✅
+3. **Verify** — run searches, build, and tests; confirm the packaged artifact name. ✅
+4. **Repository rename** — rename the GitHub repository and local checkout, then verify remotes. ✅
+
+Success criteria: the project is presented as「教典鬥搜揣」, repository/package artifacts use
+`kautian-extension`, `sutian.moe.edu.tw` integration remains unchanged, and all tests pass.

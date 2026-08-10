@@ -1,5 +1,5 @@
 {
-  "name": "sutian-plus",
+  "name": "kautian-extension",
   "version": "0.1.0",
   "private": true,
   "description": "Enhanced-search browser extension for the MoE Dictionary of Frequently-Used Taiwan Taiwanese",
@@ -14,7 +14,7 @@
     "build": "npm run build:data && npm run build:js",
     "test": "node --test \"tests/*.test.mjs\"",
     "bench": "node tests/bench.mjs",
-    "package": "npm run build && rm -f sutian-plus.zip && zip -qr sutian-plus.zip manifest.json dist data/kautian.min.json && ls -la sutian-plus.zip"
+    "package": "npm run build && rm -f kautian-extension.zip && zip -qr kautian-extension.zip manifest.json dist data/kautian.min.json && ls -la kautian-extension.zip"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"
