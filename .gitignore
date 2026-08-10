@@ -1,3 +1,16 @@
-references
+# OS / editor
 .DS_Store
+
+# Claude Code local settings
 .claude
+
+# local reference material
+references
+
+# dependencies
+node_modules/
+
+# build artifacts (regenerate with `npm run build`)
+data/
+dist/
+*.zip

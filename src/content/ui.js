@@ -1,0 +1,200 @@
+// Dropdown UI (IMPLEMENTATION_PLAN.md §7)
+// Principles: <a href> result rows, textContent instead of innerHTML,
+// keydown/pointerdown each bound exactly once at init, full ARIA combobox pattern.
+// Note: user-visible strings stay in Chinese — the target audience reads the
+// MoE dictionary in Chinese.
+import { TIER } from "../search/engine.js";
+
+const TIER_BADGE = {
+  [TIER.PREFIX]: "前綴",
+  [TIER.ABBREV]: "縮寫",
+  [TIER.ZHUYIN]: "相似音",
+  [TIER.SUBSTR]: "包含",
+  [TIER.FUZZY]: "模糊",
+};
+
+export function createUI({ input, buildHref, onFill }) {
+  const listId = "stnp-listbox";
+  const box = document.createElement("div");
+  box.className = "stnp-dropdown";
+  box.id = listId;
+  box.setAttribute("role", "listbox");
+  box.hidden = true;
+  document.body.appendChild(box);
+
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-autocomplete", "list");
+  input.setAttribute("aria-controls", listId);
+  input.setAttribute("aria-expanded", "false");
+  input.autocomplete = "off";
+
+  let rows = []; // currently rendered <a> rows
+  let results = [];
+  let active = -1;
+
+  function position() {
+    const r = input.getBoundingClientRect();
+    box.style.left = `${r.left + window.scrollX}px`;
+    box.style.top = `${r.bottom + window.scrollY + 2}px`;
+    box.style.minWidth = `${r.width}px`;
+  }
+
+  function hide() {
+    if (box.hidden) return;
+    box.hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    active = -1;
+  }
+
+  function show() {
+    position();
+    box.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  }
+
+  function setActive(idx) {
+    if (active >= 0 && rows[active]) rows[active].classList.remove("stnp-active");
+    active = idx;
+    if (active >= 0 && rows[active]) {
+      const row = rows[active];
+      row.classList.add("stnp-active");
+      input.setAttribute("aria-activedescendant", row.id);
+      row.scrollIntoView({ block: "nearest" });
+    } else {
+      input.removeAttribute("aria-activedescendant");
+    }
+  }
+
+  function addHint(text) {
+    const hint = document.createElement("div");
+    hint.className = "stnp-hint";
+    hint.textContent = text;
+    box.appendChild(hint);
+  }
+
+  // state: { type: 'loading' } | { type: 'results', results, mode, truncated, error }
+  function render(state) {
+    // Replace the whole content; listeners live on `box` (event delegation),
+    // so nothing accumulates
+    box.replaceChildren();
+    rows = [];
+    results = [];
+    active = -1;
+
+    if (state.type === "loading") {
+      addHint("詞庫載入中…");
+      show();
+      return;
+    }
+    if (state.error) {
+      addHint(state.error === "too-long" ? "regex 太長（上限 64 字元）" : "無效的 regex");
+      show();
+      return;
+    }
+    if (!state.results.length) {
+      hide();
+      return;
+    }
+    results = state.results;
+    state.results.forEach((res, idx) => {
+      const row = document.createElement("a");
+      row.className = "stnp-row";
+      row.id = `stnp-option-${idx}`;
+      row.setAttribute("role", "option");
+      row.setAttribute("aria-selected", "false");
+      row.href = buildHref(res);
+      row.dataset.idx = String(idx);
+
+      const hanzi = document.createElement("span");
+      hanzi.className = "stnp-hanzi";
+      hanzi.textContent = res.hanzi;
+      const tl = document.createElement("span");
+      tl.className = "stnp-tl";
+      tl.textContent = res.tl;
+      const poj = document.createElement("span");
+      poj.className = "stnp-sub";
+      poj.textContent = res.poj !== res.tl ? res.poj : "";
+      const tps = document.createElement("span");
+      tps.className = "stnp-sub";
+      tps.textContent = res.tps;
+      row.append(hanzi, tl, poj, tps);
+
+      if (res.variant) row.append(makeBadge("又音"));
+      const badge = state.mode === "regex" ? "regex" : TIER_BADGE[res.tier];
+      if (badge) row.append(makeBadge(badge));
+
+      box.appendChild(row);
+      rows.push(row);
+    });
+    if (state.mode === "regex") {
+      addHint(state.truncated ? "regex 模式（僅本機篩選）— 結果不完整" : "regex 模式（僅本機篩選）");
+    }
+    show();
+  }
+
+  function makeBadge(text) {
+    const b = document.createElement("span");
+    b.className = "stnp-badge";
+    b.textContent = text;
+    return b;
+  }
+
+  // --- events (each bound once) ---
+  input.addEventListener("keydown", (ev) => {
+    if (box.hidden || !rows.length) return;
+    switch (ev.key) {
+      case "ArrowDown":
+        ev.preventDefault();
+        setActive((active + 1) % rows.length);
+        break;
+      case "ArrowUp":
+        ev.preventDefault();
+        setActive((active - 1 + rows.length) % rows.length);
+        break;
+      case "Enter":
+        if (active >= 0) {
+          ev.preventDefault(); // block form submit; open the selected row instead
+          if (ev.shiftKey) {
+            onFill(results[active]);
+            hide();
+          } else {
+            window.location.href = rows[active].href;
+          }
+        }
+        // no row selected → let the host form submit normally
+        break;
+      case "Escape":
+        hide();
+        break;
+      case "Tab":
+        hide();
+        break;
+    }
+  });
+
+  box.addEventListener("mousemove", (ev) => {
+    const row = ev.target.closest(".stnp-row");
+    if (row) setActive(Number(row.dataset.idx));
+  });
+
+  box.addEventListener("click", (ev) => {
+    const row = ev.target.closest(".stnp-row");
+    if (row && ev.shiftKey) {
+      ev.preventDefault();
+      onFill(results[Number(row.dataset.idx)]);
+      hide();
+    }
+    // plain click follows the <a> native navigation
+  });
+
+  document.addEventListener("pointerdown", (ev) => {
+    if (ev.target !== input && !box.contains(ev.target)) hide();
+  });
+
+  window.addEventListener("resize", () => {
+    if (!box.hidden) position();
+  }, { passive: true });
+
+  return { render, hide };
+}

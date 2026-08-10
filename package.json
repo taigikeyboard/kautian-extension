@@ -1,0 +1,22 @@
+{
+  "name": "sutian-plus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enhanced-search browser extension for the MoE Dictionary of Frequently-Used Taiwan Taiwanese",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:data": "node scripts/build-data.mjs",
+    "build:js": "node esbuild.config.mjs",
+    "build": "npm run build:data && npm run build:js",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "bench": "node tests/bench.mjs",
+    "package": "npm run build && rm -f sutian-plus.zip && zip -qr sutian-plus.zip manifest.json dist data/kautian.min.json && ls -la sutian-plus.zip"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
