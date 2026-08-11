@@ -3,6 +3,7 @@
 import { CONFIG, extensionResourceUrl } from "./config.js";
 import { createEngine } from "../search/engine.js";
 import { createUI } from "./ui.js";
+import { watchSettings } from "./settings.js";
 
 function getLocale() {
   const seg = window.location.pathname.split("/")[1];
@@ -28,8 +29,14 @@ function init() {
   let pending = ""; // query to re-run once loading finishes
   let timer = 0;
 
+  // re-render open results when the user changes display settings
+  const getSettings = watchSettings(globalThis.chrome?.storage?.sync, () => {
+    if (engine && ui.visible()) run(input.value);
+  });
+
   const ui = createUI({
     input,
+    getSettings,
     buildHref: (res) => CONFIG.entryHref(locale, res.id),
     onFill: (res) => {
       input.value = res.tl;

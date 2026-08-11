@@ -10,7 +10,7 @@ export function dropdownMaxHeight(inputBottom, viewportHeight) {
   return Math.max(0, Math.min(MAX_DROPDOWN_HEIGHT, viewportHeight - inputBottom - VIEWPORT_GAP));
 }
 
-export function createUI({ input, buildHref, onFill }) {
+export function createUI({ input, buildHref, onFill, getSettings = () => ({ showPoj: true, showTps: false, fontScale: 85 }) }) {
   const listId = "stnp-listbox";
   const box = document.createElement("div");
   box.className = "stnp-dropdown";
@@ -72,10 +72,19 @@ export function createUI({ input, buildHref, onFill }) {
     box.appendChild(hint);
   }
 
+  function applyFontScale() {
+    const scale = Number(getSettings().fontScale) || 100;
+    // scale relative to the host site's base size (styles.css default)
+    box.style.fontSize = scale === 100
+      ? ""
+      : `calc(var(--bs-body-font-size, 1.3rem) * ${scale / 100})`;
+  }
+
   // state: { type: 'loading' } | { type: 'results', results, mode, truncated, error }
   function render(state) {
     // Replace the whole content; listeners live on `box` (event delegation),
     // so nothing accumulates
+    applyFontScale();
     box.replaceChildren();
     rows = [];
     results = [];
@@ -96,6 +105,7 @@ export function createUI({ input, buildHref, onFill }) {
       return;
     }
     results = state.results;
+    const settings = getSettings();
     state.results.forEach((res, idx) => {
       const row = document.createElement("a");
       row.className = "stnp-row";
@@ -111,13 +121,19 @@ export function createUI({ input, buildHref, onFill }) {
       const tl = document.createElement("span");
       tl.className = "stnp-tl";
       tl.textContent = res.tl;
-      const poj = document.createElement("span");
-      poj.className = "stnp-sub";
-      poj.textContent = res.poj !== res.tl ? res.poj : "";
-      const tps = document.createElement("span");
-      tps.className = "stnp-sub";
-      tps.textContent = res.tps;
-      row.append(hanzi, tl, poj, tps);
+      row.append(hanzi, tl);
+      if (settings.showPoj) {
+        const poj = document.createElement("span");
+        poj.className = "stnp-sub";
+        poj.textContent = res.poj !== res.tl ? res.poj : "";
+        row.append(poj);
+      }
+      if (settings.showTps) {
+        const tps = document.createElement("span");
+        tps.className = "stnp-sub";
+        tps.textContent = res.tps;
+        row.append(tps);
+      }
 
       box.appendChild(row);
       rows.push(row);
@@ -188,5 +204,5 @@ export function createUI({ input, buildHref, onFill }) {
     if (!box.hidden) position();
   }, { capture: true, passive: true });
 
-  return { render, hide };
+  return { render, hide, visible: () => !box.hidden };
 }
