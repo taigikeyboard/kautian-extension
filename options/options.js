@@ -3,10 +3,12 @@
 const DEFAULT_SETTINGS = {
   showPoj: true,
   showTps: false,
+  showRandomWord: true,
+  showRandomProverb: true,
   fontScale: 85,
 };
 
-const TOGGLE_KEYS = ["showPoj", "showTps"];
+const TOGGLE_KEYS = ["showPoj", "showTps", "showRandomWord", "showRandomProverb"];
 const scaleRadios = [...document.querySelectorAll('input[name="fontScale"]')];
 
 chrome.storage.sync.get(DEFAULT_SETTINGS, (stored) => {

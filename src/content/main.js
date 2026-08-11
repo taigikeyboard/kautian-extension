@@ -30,9 +30,11 @@ function init() {
   let pending = ""; // query to re-run once loading finishes
   let pendingRandom = null; // id-picker queued when a click beats data loading
   let timer = 0;
+  const randomBtns = [];
 
   // re-render open results when the user changes display settings
   const getSettings = watchSettings(globalThis.chrome?.storage?.sync, () => {
+    syncRandomButtonVisibility();
     if (engine && ui.visible()) run(input.value);
   });
   const recency = createRecency(globalThis.chrome?.storage?.local);
@@ -99,14 +101,13 @@ function init() {
 
   // Random-discovery buttons beside the「搜尋」label:
   // 🎲 any main entry;📜 proverb-like entries (experimental)
-  const randomBtns = [];
   {
     let anchor = document.getElementById(CONFIG.LABEL_ID);
     const defs = [
-      ["🎲", "Open a random word", (eng) => eng.randomMainId()],
-      ["📜", "Open a random proverb", (eng) => eng.randomProverbId()],
+      ["🎲", "Open a random word", "showRandomWord", (eng) => eng.randomMainId()],
+      ["📜", "Open a random proverb", "showRandomProverb", (eng) => eng.randomProverbId()],
     ];
-    for (const [glyph, titleText, pickId] of defs) {
+    for (const [glyph, titleText, settingKey, pickId] of defs) {
       if (!anchor) break;
       const btn = document.createElement("button");
       btn.type = "button";
@@ -114,10 +115,19 @@ function init() {
       btn.textContent = glyph;
       btn.title = titleText;
       btn.setAttribute("aria-label", titleText);
+      btn.dataset.settingKey = settingKey;
       btn.addEventListener("click", () => goRandom(pickId));
       anchor.insertAdjacentElement("afterend", btn);
       anchor = btn;
       randomBtns.push(btn);
+    }
+    syncRandomButtonVisibility();
+  }
+
+  function syncRandomButtonVisibility() {
+    const settings = getSettings();
+    for (const btn of randomBtns) {
+      btn.hidden = !settings[btn.dataset.settingKey];
     }
   }
 

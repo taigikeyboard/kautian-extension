@@ -7,10 +7,16 @@ import { dataFold, queryFold } from "../src/search/zhuyin-fold.js";
 import { boundedDistance, fuzzyThreshold } from "../src/search/fuzzy.js";
 import { hasRegexSyntax, parsePattern } from "../src/search/regex-mode.js";
 import { CONFIG, extensionResourceUrl } from "../src/content/config.js";
+import { DEFAULT_SETTINGS } from "../src/content/settings.js";
 import { dropdownMaxHeight } from "../src/content/ui.js";
 
 test("dropdown result limit favors broad matching", () => {
   assert.equal(CONFIG.LIMIT, 200);
+});
+
+test("random discovery controls are enabled by default", () => {
+  assert.equal(DEFAULT_SETTINGS.showRandomWord, true);
+  assert.equal(DEFAULT_SETTINGS.showRandomProverb, true);
 });
 
 test("extension resource URL tolerates an invalidated runtime", () => {

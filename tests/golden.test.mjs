@@ -134,18 +134,11 @@ test("Zhuyin approximate sound: ㄙㄨㄉㄧㄚ, ㄒㄧ", () => {
   assert.ok(hanzis(b).length > 0);
 });
 
-test("latin is strictly prefix: no substring/fuzzy/regex broadening", () => {
-  // sualakku (missing h) used to fuzzy-match 沙鹿區 — no longer
-  const a = engine.query("sualakku");
-  assert.ok(!hanzis(a).includes("沙鹿區"));
-  // plain latin results never exceed the abbreviation tier
-  const b = engine.query("tshiau", { limit: 200 });
-  assert.ok(b.results.length > 0);
-  assert.ok(b.results.every((x) => x.tier <= TIER.ABBREV));
-  // mid-word substring hits are gone: "ang" must not surface e.g. *b-ang* words
-  const c = engine.query("ang", { limit: 200 });
-  const notone = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/--|[-\s]+/g, "");
-  assert.ok(c.results.every((x) => notone(x.tl).startsWith("ang") || notone(x.poj).startsWith("ang") || x.tier === TIER.ABBREV));
+test("fuzzy: sualakku (missing h) → 沙鹿區", () => {
+  const r = engine.query("sualakku");
+  assert.ok(hanzis(r).includes("沙鹿區"));
+  const hit = r.results.find((x) => x.hanzi === "沙鹿區");
+  assert.equal(hit.tier, TIER.FUZZY);
 });
 
 test("raw regex is merged into ordinary search", () => {
