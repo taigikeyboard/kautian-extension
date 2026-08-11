@@ -5,7 +5,6 @@ import { classify } from "./detect.js";
 import { normalizeLatin, foldHanzi, normalizeTps } from "./normalize.js";
 import { deriveTlNotone, derivePojNotone, deriveTpsNotone } from "./derive.js";
 import { queryFold, dataFold } from "./zhuyin-fold.js";
-import { fuzzyScan } from "./fuzzy.js";
 import { hasRegexSyntax, parsePattern, regexScan } from "./regex-mode.js";
 
 // Ranking tiers (§6.3)
@@ -15,12 +14,11 @@ export const TIER = {
   PREFIX: 3, // toneless prefix
   ABBREV: 4, // abbreviation exact
   ZHUYIN: 5, // Zhuyin approximate sound
-  SUBSTR: 6, // substring
-  FUZZY: 7, // fuzzy
+  SUBSTR: 6, // substring (hanzi only — latin is strictly prefix)
+  FUZZY: 7, // reserved (fuzzy no longer used; latin is strictly prefix)
   REGEX: 8, // raw regular-expression match
 };
 
-const CANDIDATE_CAP = 50;
 const PREFIX_CAP = 200;
 const SUBSTR_CAP = 100;
 
@@ -212,19 +210,7 @@ export function createEngine(packed) {
     }
     searchExact(ixAbbrev(), tlKey, (i) => add(tiers, i, TIER.ABBREV));
     if (pojKey !== tlKey) searchExact(ixAbbrev(), pojKey, (i) => add(tiers, i, TIER.ABBREV));
-    if (tiers.size < CANDIDATE_CAP && tlKey.length >= 3) {
-      let hits = 0;
-      for (let i = 0; i < n && hits < SUBSTR_CAP; i++) {
-        if (tlNotone[i].includes(tlKey) || pojNotone[i].includes(pojKey)) {
-          add(tiers, i, TIER.SUBSTR);
-          hits++;
-        }
-      }
-    }
-    if (tiers.size < 20 && tlKey.length >= 3) {
-      fuzzyScan(tlNotone, tlKey, (i) => add(tiers, i, TIER.FUZZY));
-      if (pojKey !== tlKey) fuzzyScan(pojNotone, pojKey, (i) => add(tiers, i, TIER.FUZZY));
-    }
+    // strictly prefix by request: no substring / fuzzy broadening for latin
   }
 
   function queryHanzi(input, tiers) {
@@ -251,18 +237,22 @@ export function createEngine(packed) {
     }
   }
 
-  // Every non-empty input uses both the normalized search path and a guarded
-  // raw-regex scan. Ranked normalized hits stay first; regex expands the set.
+  // Hanzi/bopomofo inputs additionally run a guarded raw-regex scan (ranked
+  // normalized hits stay first; regex expands the set). Plain latin input is
+  // strictly prefix-based — the regex scan runs for it only when the input
+  // actually contains regex syntax.
   // → { mode, results, truncated?, error? }
   function query(input, { limit = 20 } = {}) {
     const mode = classify(input);
     if (mode === "empty") return { mode, results: [] };
 
     const tiers = new Map();
-    if (!hasRegexSyntax(input)) {
+    const isRegex = hasRegexSyntax(input);
+    if (!isRegex) {
       if (mode === "hanzi") queryHanzi(input, tiers);
       else if (mode === "bopomofo") queryBopomofo(input, tiers);
       else queryLatin(input, tiers);
+      if (mode === "latin") return { mode, results: finalize(tiers, limit) };
     }
 
     const { re, error } = parsePattern(input);
