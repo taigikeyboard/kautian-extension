@@ -83,6 +83,23 @@ test("POJ input: chhiau→tshiau, soa-lak-khu→沙鹿區", () => {
   assert.ok(hanzis(b).includes("沙鹿區"));
 });
 
+test("POJ and TL tone-number equivalents return the same results", () => {
+  const poj = engine.query("teng2", { limit: 200 });
+  const tl = engine.query("ting2", { limit: 200 });
+  assert.deepEqual(poj.results.map((x) => x.id), tl.results.map((x) => x.id));
+  const tps = engine.query("ㄉㄧㄥˋ", { limit: 200 });
+  assert.deepEqual(tps.results.map((x) => x.id), tl.results.map((x) => x.id));
+});
+
+test("POJ, TL, and TPS equivalents preserve nasalization and tone", () => {
+  const inputs = ["khuánn", "khuann2", "khóaⁿ", "khoann2", "khoaⁿ2", "ㄎㄨㆩˋ"];
+  const expected = engine.query(inputs[0], { limit: 200 }).results.map((x) => x.id);
+  for (const input of inputs.slice(1)) {
+    const actual = engine.query(input, { limit: 200 }).results.map((x) => x.id);
+    assert.deepEqual(actual, expected, `${input} should match ${inputs[0]}`);
+  }
+});
+
 test("prefix: sutia* completion", () => {
   const r = engine.query("sutia");
   assert.ok(r.results.length > 0);

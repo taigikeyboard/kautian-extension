@@ -3,7 +3,7 @@
 // Pure-function module — no DOM, no chrome APIs; testable directly in Node.
 import { classify } from "./detect.js";
 import { normalizeLatin, foldHanzi, normalizeTps } from "./normalize.js";
-import { deriveTlNotone, derivePojNotone, deriveTpsNotone } from "./derive.js";
+import { deriveTlNotone, derivePojNotone, deriveTpsNotone, hasExplicitTpsTone } from "./derive.js";
 import { queryFold, dataFold } from "./zhuyin-fold.js";
 import { fuzzyScan } from "./fuzzy.js";
 import { hasRegexSyntax, parsePattern, regexScan } from "./regex-mode.js";
@@ -285,6 +285,7 @@ export function createEngine(packed) {
   function queryBopomofo(input, tiers) {
     // Toned-exact first: TPS with tone marks (or none = tone 1) matches tps_num
     searchExact(ixToned(), input.normalize("NFC").trim(), (i) => add(tiers, i, TIER.TONED));
+    if (hasExplicitTpsTone(input)) return;
     const tpsKey = normalizeTps(input);
     searchPrefix(ixTps(), tpsKey, (i, exact) =>
       add(tiers, i, exact ? TIER.EXACT : TIER.PREFIX));
@@ -301,16 +302,22 @@ export function createEngine(packed) {
     if (mode === "empty") return { mode, results: [] };
 
     const tiers = new Map();
-    if (!hasRegexSyntax(input)) {
+    const isRegex = hasRegexSyntax(input);
+    let scanInput = input;
+    if (!isRegex) {
       if (mode === "hanzi") queryHanzi(input, tiers);
       else if (mode === "bopomofo") queryBopomofo(input, tiers);
-      else queryLatin(input, tiers);
+      else {
+        queryLatin(input, tiers);
+        const normalized = normalizeLatin(input);
+        scanInput = normalized.hasTone ? normalized.tonedTlNumber : normalized.tlKey;
+      }
     }
 
-    const { re, error } = parsePattern(input);
+    const { re, error } = parsePattern(scanInput);
     if (error) return { mode, results: [], error };
     const { truncated } = regexScan(
-      { tl: d.tl, tlNum: d.tlNum, tlNotone, poj: d.poj, hanzi: d.hanzi },
+      { tl: d.tl, tlNum: d.tlNum, tlNotone, poj: d.poj, tps: d.tps, hanzi: d.hanzi },
       re,
       (i) => add(tiers, i, TIER.REGEX)
     );

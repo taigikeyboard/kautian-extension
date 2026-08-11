@@ -8,6 +8,7 @@
 // ˘ (U+02D8), ˪˫ (vertical tones 3/7), combining marks (incl. tone 8 U+0307),
 // whitespace (tone 1), · (neutral-tone prefix)
 export const TPS_TONE_RE = /[ˊˇˋ˙ˆ˘˪˫̀-ͯ\s·]/g;
+const TPS_EXPLICIT_TONE_RE = /[ˊˇˋ˙ˆ˘˪˫̀-ͯ·]/;
 
 const COMBINING_RE = /[̀-ͯ]/g;
 const JOIN_RE = /--|[-\s]+|[0-9]/g;
@@ -38,4 +39,8 @@ export function derivePojNotone(poj) {
 // tps (with tones) → toneless (≡ CSV tps_notone)
 export function deriveTpsNotone(tps) {
   return tps.normalize("NFC").replace(TPS_TONE_RE, "");
+}
+
+export function hasExplicitTpsTone(tps) {
+  return TPS_EXPLICIT_TONE_RE.test(tps.normalize("NFD"));
 }

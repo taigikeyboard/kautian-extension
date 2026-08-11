@@ -6,6 +6,7 @@ import { normalizeLatin, foldHanzi, normalizeTps } from "../src/search/normalize
 import { dataFold, queryFold } from "../src/search/zhuyin-fold.js";
 import { boundedDistance, fuzzyThreshold } from "../src/search/fuzzy.js";
 import { hasRegexSyntax, parsePattern } from "../src/search/regex-mode.js";
+import { hasExplicitTpsTone } from "../src/search/derive.js";
 import { CONFIG, extensionResourceUrl } from "../src/content/config.js";
 import { DEFAULT_SETTINGS } from "../src/content/settings.js";
 import { dropdownMaxHeight } from "../src/content/ui.js";
@@ -67,6 +68,9 @@ test("normalizeLatin: tone marks / tone digits / hyphens / case", () => {
   assert.equal(normalizeLatin("chhiau").pojKey, "chhiau");
   assert.equal(normalizeLatin("thô͘").tlKey, "thoo");
   assert.equal(normalizeLatin("koaⁿ").tlKey, "kuann");
+  assert.equal(normalizeLatin("teng2").tonedTl, "tíng");
+  assert.equal(normalizeLatin("khóaⁿ").tonedTl, "khuánn");
+  assert.equal(normalizeLatin("khóaⁿ").tonedTlNumber, "khuann2");
   // neutral-tone prefix --
   assert.equal(normalizeLatin("khì--ah").tlKey, "khiah");
 });
@@ -76,6 +80,11 @@ test("foldHanzi / normalizeTps", () => {
   assert.equal(normalizeTps("ㆠㄨㄣˊ"), "ㆠㄨㄣ");
   assert.equal(normalizeTps("ㄒㄧ˫"), "ㄒㄧ");
   assert.equal(normalizeTps("ㄗㄨˆ"), "ㄗㄨ"); // tone 9 ˆ U+02C6 (bug found in PERF_EVALUATION)
+});
+
+test("hasExplicitTpsTone distinguishes marked from toneless input", () => {
+  assert.equal(hasExplicitTpsTone("ㄉㄧㄥˋ"), true);
+  assert.equal(hasExplicitTpsTone("ㄉㄧㄥ"), false);
 });
 
 test("dataFold: TPS → tokens", () => {

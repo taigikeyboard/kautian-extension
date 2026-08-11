@@ -31,7 +31,7 @@ export function parsePattern(input) {
 // Scan the enhanced fields plus the site's spaced numeric Tâi-lô field.
 // Returns { truncated }: true when the time budget was exceeded.
 export function regexScan(data, re, add) {
-  const { tl, tlNum, tlNotone, poj, hanzi } = data;
+  const { tl, tlNum, tlNotone, poj, tps, hanzi } = data;
   const start = performance.now();
   let hits = 0;
   for (let i = 0; i < tl.length; i++) {
@@ -40,7 +40,7 @@ export function regexScan(data, re, add) {
     }
     if (
       re.test(tlNum[i]) || re.test(hanzi[i]) || re.test(tl[i]) ||
-      re.test(tlNotone[i]) || re.test(poj[i])
+      re.test(tlNotone[i]) || re.test(poj[i]) || re.test(tps[i])
     ) {
       add(i);
       if (++hits >= MAX_HITS) return { truncated: true };
