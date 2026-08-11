@@ -221,6 +221,22 @@ test("randomMainId: deterministic with injected rand, main entries only", () => 
   }
 });
 
+test("randomProverbId: deterministic, only fullwidth-punctuated main entries", () => {
+  const ids = packed.id;
+  const flags = packed.flags;
+  const hanzi = packed.hanzi.split("\n");
+  const first = engine.randomProverbId(() => 0);
+  assert.equal(engine.randomProverbId(() => 0), first);
+  const last = engine.randomProverbId(() => 0.999999);
+  assert.notEqual(first, last);
+  for (const id of [first, last]) {
+    assert.ok(
+      ids.some((x, i) => x === id && (flags[i] & 1) && /[，。；？]/.test(hanzi[i])),
+      `id ${id} should be a proverb-like main entry`
+    );
+  }
+});
+
 test("empty input", () => {
   assert.equal(engine.query("").results.length, 0);
   assert.equal(engine.query("   ").results.length, 0);

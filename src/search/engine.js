@@ -198,20 +198,36 @@ export function createEngine(packed) {
 
   // Random discovery: pick among main entries only (variant/again readings
   // land on poor pages). `rand` is injectable for deterministic tests.
-  let mainRows = null;
-  function randomMainId(rand = Math.random) {
-    if (!mainRows) {
-      mainRows = [];
-      const seenIds = new Set();
-      for (let i = 0; i < n; i++) {
-        if ((d.flags[i] & 1) && !seenIds.has(d.id[i])) {
-          mainRows.push(i);
-          seenIds.add(d.id[i]);
-        }
+  function buildPool(keep) {
+    const pool = [];
+    const seenIds = new Set();
+    for (let i = 0; i < n; i++) {
+      if (keep(i) && !seenIds.has(d.id[i])) {
+        pool.push(i);
+        seenIds.add(d.id[i]);
       }
     }
-    const i = mainRows[Math.floor(rand() * mainRows.length)];
-    return d.id[i];
+    return pool;
+  }
+
+  let mainRows = null;
+  function randomMainId(rand = Math.random) {
+    if (!mainRows) mainRows = buildPool((i) => (d.flags[i] & 1) !== 0);
+    return d.id[mainRows[Math.floor(rand() * mainRows.length)]];
+  }
+
+  // Experimental: fullwidth clause punctuation in the hanzi form marks
+  // proverb-like entries (~470 of ~34k main entries; validated by sampling).
+  // ；？ are insurance for future data — today every such entry also has ，。
+  // 、and （） stay excluded on purpose: those mark place/station names.
+  const PROVERB_RE = /[，。；？]/;
+  let proverbRows = null;
+  function randomProverbId(rand = Math.random) {
+    if (!proverbRows) {
+      proverbRows = buildPool((i) => (d.flags[i] & 1) !== 0 && PROVERB_RE.test(d.hanzi[i]));
+    }
+    if (!proverbRows.length) return undefined;
+    return d.id[proverbRows[Math.floor(rand() * proverbRows.length)]];
   }
 
   function add(tiers, i, tier) {
@@ -291,5 +307,5 @@ export function createEngine(packed) {
     return { mode, truncated, results: finalize(tiers, limit, recencyRank) };
   }
 
-  return { query, randomMainId, size: n };
+  return { query, randomMainId, randomProverbId, size: n };
 }

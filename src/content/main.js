@@ -28,7 +28,7 @@ function init() {
   let engine = null;
   let loading = false;
   let pending = ""; // query to re-run once loading finishes
-  let pendingRandom = false; // random-entry click arrived before data loaded
+  let pendingRandom = null; // id-picker queued when a click beats data loading
   let timer = 0;
 
   // re-render open results when the user changes display settings
@@ -64,42 +64,61 @@ function init() {
         engine = createEngine(data);
         loading = false;
         if (pendingRandom) {
-          pendingRandom = false;
-          goRandom(); // opens a new tab — this page keeps working
+          const pick = pendingRandom;
+          pendingRandom = null;
+          goRandom(pick); // opens a new tab — this page keeps working
         }
         if (pending) run(pending);
       })
       .catch((err) => {
         loading = false;
-        pendingRandom = false;
-        if (randomBtn) randomBtn.disabled = false;
+        pendingRandom = null;
+        setRandomDisabled(false);
         console.warn("[kautian-extension] failed to load lexicon:", err.message);
         ui.hide();
       });
   }
 
-  function goRandom() {
+  function setRandomDisabled(disabled) {
+    for (const btn of randomBtns) btn.disabled = disabled;
+  }
+
+  function goRandom(pickId) {
     if (!engine) {
-      pendingRandom = true;
-      if (randomBtn) randomBtn.disabled = true; // block double-clicks while loading
+      pendingRandom = pickId;
+      setRandomDisabled(true); // block double-clicks while loading
       ensureData();
       return;
     }
-    window.open(CONFIG.entryHref(locale, engine.randomMainId()), "_blank", "noopener");
-    if (randomBtn) randomBtn.disabled = false; // page stays — make it clickable again
+    const id = pickId(engine);
+    if (id !== undefined) {
+      window.open(CONFIG.entryHref(locale, id), "_blank", "noopener");
+    }
+    setRandomDisabled(false); // page stays — make it clickable again
   }
 
-  // 🎲 beside the「搜尋」label: open a random main entry
-  const label = document.getElementById(CONFIG.LABEL_ID);
-  const randomBtn = label ? document.createElement("button") : null;
-  if (randomBtn) {
-    randomBtn.type = "button";
-    randomBtn.className = "stnp-random";
-    randomBtn.textContent = "🎲";
-    randomBtn.title = "Open a random word";
-    randomBtn.setAttribute("aria-label", "Open a random word");
-    randomBtn.addEventListener("click", goRandom);
-    label.insertAdjacentElement("afterend", randomBtn);
+  // Random-discovery buttons beside the「搜尋」label:
+  // 🎲 any main entry;📜 proverb-like entries (experimental)
+  const randomBtns = [];
+  {
+    let anchor = document.getElementById(CONFIG.LABEL_ID);
+    const defs = [
+      ["🎲", "Open a random word", (eng) => eng.randomMainId()],
+      ["📜", "Open a random proverb", (eng) => eng.randomProverbId()],
+    ];
+    for (const [glyph, titleText, pickId] of defs) {
+      if (!anchor) break;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "stnp-random";
+      btn.textContent = glyph;
+      btn.title = titleText;
+      btn.setAttribute("aria-label", titleText);
+      btn.addEventListener("click", () => goRandom(pickId));
+      anchor.insertAdjacentElement("afterend", btn);
+      anchor = btn;
+      randomBtns.push(btn);
+    }
   }
 
   function run(value) {
