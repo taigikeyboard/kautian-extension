@@ -4,6 +4,7 @@ export const DEFAULT_SETTINGS = {
   showPoj: true, // show 白話字 (POJ) in dropdown rows
   showTps: false, // show 方音符號 (TPS) in dropdown rows
   fontScale: 85, // dropdown font size, percent of the host site's base size
+  rememberRecent: true, // rank recently opened entries first (stored locally)
 };
 
 // Returns a live settings object plus a getter. `onChange` fires after the

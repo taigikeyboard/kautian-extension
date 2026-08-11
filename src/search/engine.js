@@ -148,7 +148,7 @@ export function createEngine(packed) {
     });
   const ixZhu = () => index("zhu", () => buildSorted(zhu.map((k, i) => [k, i])));
 
-  function toResult(i, tier) {
+  function toResult(i, tier, recent) {
     return {
       i,
       tier,
@@ -159,15 +159,23 @@ export function createEngine(packed) {
       tps: d.tps[i],
       main: (d.flags[i] & 1) !== 0,
       variant: (d.flags[i] & 2) !== 0,
+      recent, // recently opened by the user (drives the clock hint in the UI)
     };
   }
 
-  // No frequency ranking (by request): tier → main entry → non-variant →
-  // shorter word; remaining ties keep stable candidate order.
-  function finalize(tiers, limit) {
+  // No frequency ranking (by request): tier → recently opened (never crosses
+  // a tier boundary) → main entry → non-variant → shorter word; remaining
+  // ties keep stable candidate order.
+  function finalize(tiers, limit, recencyRank) {
     const entries = [...tiers.entries()]; // [idx, tier]
     entries.sort((a, b) => {
       if (a[1] !== b[1]) return a[1] - b[1];
+      if (recencyRank) {
+        const ra = recencyRank(d.id[a[0]]);
+        const rb = recencyRank(d.id[b[0]]);
+        if ((ra !== undefined) !== (rb !== undefined)) return ra !== undefined ? -1 : 1;
+        if (ra !== undefined && ra !== rb) return ra - rb;
+      }
       const ma = d.flags[a[0]] & 1;
       const mb = d.flags[b[0]] & 1;
       if (ma !== mb) return mb - ma; // main entries first
@@ -182,7 +190,7 @@ export function createEngine(packed) {
     for (const [i, tier] of entries) {
       if (seen.has(d.id[i])) continue;
       seen.add(d.id[i]);
-      results.push(toResult(i, tier));
+      results.push(toResult(i, tier, recencyRank?.(d.id[i]) !== undefined));
       if (results.length >= limit) break;
     }
     return results;
@@ -242,7 +250,7 @@ export function createEngine(packed) {
   // strictly prefix-based — the regex scan runs for it only when the input
   // actually contains regex syntax.
   // → { mode, results, truncated?, error? }
-  function query(input, { limit = 20 } = {}) {
+  function query(input, { limit = 20, recencyRank } = {}) {
     const mode = classify(input);
     if (mode === "empty") return { mode, results: [] };
 
@@ -252,7 +260,7 @@ export function createEngine(packed) {
       if (mode === "hanzi") queryHanzi(input, tiers);
       else if (mode === "bopomofo") queryBopomofo(input, tiers);
       else queryLatin(input, tiers);
-      if (mode === "latin") return { mode, results: finalize(tiers, limit) };
+      if (mode === "latin") return { mode, results: finalize(tiers, limit, recencyRank) };
     }
 
     const { re, error } = parsePattern(input);
@@ -262,7 +270,7 @@ export function createEngine(packed) {
       re,
       (i) => add(tiers, i, TIER.REGEX)
     );
-    return { mode, truncated, results: finalize(tiers, limit) };
+    return { mode, truncated, results: finalize(tiers, limit, recencyRank) };
   }
 
   return { query, size: n };

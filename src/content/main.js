@@ -4,6 +4,7 @@ import { CONFIG, extensionResourceUrl } from "./config.js";
 import { createEngine } from "../search/engine.js";
 import { createUI } from "./ui.js";
 import { watchSettings } from "./settings.js";
+import { createRecency } from "./recency.js";
 
 function getLocale() {
   const seg = window.location.pathname.split("/")[1];
@@ -33,11 +34,15 @@ function init() {
   const getSettings = watchSettings(globalThis.chrome?.storage?.sync, () => {
     if (engine && ui.visible()) run(input.value);
   });
+  const recency = createRecency(globalThis.chrome?.storage?.local);
 
   const ui = createUI({
     input,
     getSettings,
     buildHref: (res) => CONFIG.entryHref(locale, res.id),
+    onSelect: (res) => {
+      if (getSettings().rememberRecent) recency.record(res.id);
+    },
     onFill: (res) => {
       input.value = res.tl;
       // hand control back to the host page (synthetic input event)
@@ -79,7 +84,10 @@ function init() {
       return;
     }
     pending = "";
-    const out = engine.query(q, { limit: CONFIG.LIMIT });
+    const out = engine.query(q, {
+      limit: CONFIG.LIMIT,
+      recencyRank: getSettings().rememberRecent ? recency.rankOf : undefined,
+    });
     ui.render({ type: "results", ...out });
   }
 

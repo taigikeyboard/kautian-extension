@@ -8,10 +8,16 @@ Search terms entered by the user are processed locally on the user's device and 
 dictionary data bundled with the extension. Search terms are not sent to the developer or to any
 third party.
 
+To rank recently opened entries first, the extension keeps a short list (at most 50) of recently
+opened dictionary-entry ids in the browser's local extension storage on the user's device only.
+This list never leaves the device, is not synced, and is deleted when the extension is removed.
+Display preferences (which columns to show, font size) are stored in the browser's extension
+storage and may be synced by the browser as part of the user's own browser profile.
+
 The extension:
 
 - does not collect personally identifiable information;
-- does not collect browsing history or search history;
+- does not transmit browsing history or search history off the device;
 - does not use analytics, tracking, or advertising services;
 - does not set cookies;
 - does not sell or share user data; and

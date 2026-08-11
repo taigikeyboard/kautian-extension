@@ -10,7 +10,13 @@ export function dropdownMaxHeight(inputBottom, viewportHeight) {
   return Math.max(0, Math.min(MAX_DROPDOWN_HEIGHT, viewportHeight - inputBottom - VIEWPORT_GAP));
 }
 
-export function createUI({ input, buildHref, onFill, getSettings = () => ({ showPoj: true, showTps: false, fontScale: 85 }) }) {
+export function createUI({
+  input,
+  buildHref,
+  onFill,
+  onSelect = () => {},
+  getSettings = () => ({ showPoj: true, showTps: false, fontScale: 85 }),
+}) {
   const listId = "stnp-listbox";
   const box = document.createElement("div");
   box.className = "stnp-dropdown";
@@ -159,6 +165,7 @@ export function createUI({ input, buildHref, onFill, getSettings = () => ({ show
       case "Enter":
         if (active >= 0) {
           ev.preventDefault(); // block form submit; open the selected row instead
+          onSelect(results[active]);
           if (ev.shiftKey) {
             onFill(results[active]);
             hide();
@@ -184,7 +191,9 @@ export function createUI({ input, buildHref, onFill, getSettings = () => ({ show
 
   box.addEventListener("click", (ev) => {
     const row = ev.target.closest(".stnp-row");
-    if (row && ev.shiftKey) {
+    if (!row) return;
+    onSelect(results[Number(row.dataset.idx)]);
+    if (ev.shiftKey) {
       ev.preventDefault();
       onFill(results[Number(row.dataset.idx)]);
       hide();

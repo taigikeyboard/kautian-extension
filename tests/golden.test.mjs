@@ -181,6 +181,33 @@ test("raw regex matches the site's spaced numeric Tâi-lô format", () => {
   assert.ok(hanzis(alternatives).includes("火車"));
 });
 
+test("recency: boosts within a tier, never across tiers", () => {
+  // "tk" abbreviation hits share one tier — a recent entry moves to the front
+  const base = engine.query("tk", { limit: 50 });
+  assert.ok(base.results.length > 5);
+  const target = base.results[5];
+  const boosted = engine.query("tk", {
+    limit: 50,
+    recencyRank: (id) => (id === target.id ? 0 : undefined),
+  });
+  assert.equal(boosted.results[0].id, target.id);
+  assert.equal(boosted.results[0].recent, true);
+  assert.equal(boosted.results[1].recent, false);
+
+  // a recent prefix-tier hit must not overtake the toned-exact hit (詩 si)
+  const si = engine.query("si", { limit: 200 });
+  const prefixHit = si.results.find((x) => x.tier === TIER.PREFIX);
+  assert.ok(prefixHit);
+  const siBoosted = engine.query("si", {
+    limit: 200,
+    recencyRank: (id) => (id === prefixHit.id ? 0 : undefined),
+  });
+  assert.equal(siBoosted.results[0].tier, TIER.TONED);
+  const boostedPos = siBoosted.results.findIndex((x) => x.id === prefixHit.id);
+  const firstPrefixPos = siBoosted.results.findIndex((x) => x.tier === TIER.PREFIX);
+  assert.equal(boostedPos, firstPrefixPos); // first within its own tier
+});
+
 test("empty input", () => {
   assert.equal(engine.query("").results.length, 0);
   assert.equal(engine.query("   ").results.length, 0);
