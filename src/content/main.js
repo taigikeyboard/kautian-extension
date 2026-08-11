@@ -28,6 +28,7 @@ function init() {
   let engine = null;
   let loading = false;
   let pending = ""; // query to re-run once loading finishes
+  let pendingRandom = false; // random-entry click arrived before data loaded
   let timer = 0;
 
   // re-render open results when the user changes display settings
@@ -62,13 +63,43 @@ function init() {
       .then((data) => {
         engine = createEngine(data);
         loading = false;
+        if (pendingRandom) {
+          pendingRandom = false;
+          goRandom(); // opens a new tab — this page keeps working
+        }
         if (pending) run(pending);
       })
       .catch((err) => {
         loading = false;
+        pendingRandom = false;
+        if (randomBtn) randomBtn.disabled = false;
         console.warn("[kautian-extension] failed to load lexicon:", err.message);
         ui.hide();
       });
+  }
+
+  function goRandom() {
+    if (!engine) {
+      pendingRandom = true;
+      if (randomBtn) randomBtn.disabled = true; // block double-clicks while loading
+      ensureData();
+      return;
+    }
+    window.open(CONFIG.entryHref(locale, engine.randomMainId()), "_blank", "noopener");
+    if (randomBtn) randomBtn.disabled = false; // page stays — make it clickable again
+  }
+
+  // 🎲 beside the「搜尋」label: open a random main entry
+  const label = document.getElementById(CONFIG.LABEL_ID);
+  const randomBtn = label ? document.createElement("button") : null;
+  if (randomBtn) {
+    randomBtn.type = "button";
+    randomBtn.className = "stnp-random";
+    randomBtn.textContent = "🎲";
+    randomBtn.title = "Open a random word";
+    randomBtn.setAttribute("aria-label", "Open a random word");
+    randomBtn.addEventListener("click", goRandom);
+    label.insertAdjacentElement("afterend", randomBtn);
   }
 
   function run(value) {

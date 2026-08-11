@@ -196,6 +196,24 @@ export function createEngine(packed) {
     return results;
   }
 
+  // Random discovery: pick among main entries only (variant/again readings
+  // land on poor pages). `rand` is injectable for deterministic tests.
+  let mainRows = null;
+  function randomMainId(rand = Math.random) {
+    if (!mainRows) {
+      mainRows = [];
+      const seenIds = new Set();
+      for (let i = 0; i < n; i++) {
+        if ((d.flags[i] & 1) && !seenIds.has(d.id[i])) {
+          mainRows.push(i);
+          seenIds.add(d.id[i]);
+        }
+      }
+    }
+    const i = mainRows[Math.floor(rand() * mainRows.length)];
+    return d.id[i];
+  }
+
   function add(tiers, i, tier) {
     const cur = tiers.get(i);
     if (cur === undefined || tier < cur) tiers.set(i, tier);
@@ -273,5 +291,5 @@ export function createEngine(packed) {
     return { mode, truncated, results: finalize(tiers, limit, recencyRank) };
   }
 
-  return { query, size: n };
+  return { query, randomMainId, size: n };
 }

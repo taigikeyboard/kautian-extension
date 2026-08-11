@@ -2,6 +2,7 @@
 // Centralized selectors, URLs, and search limits.
 export const CONFIG = {
   INPUT_ID: "id_tsha",
+  LABEL_ID: "label_tsha", // the「搜尋」label — the 🎲 button mounts beside it
   FORM_NAME: "tshiautuann",
   LUI_ENABLED: "tai_su", // enhancement is active only in Taiwanese-word mode
   LOCALES: ["zh-hant", "und-hani"],

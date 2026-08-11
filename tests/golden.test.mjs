@@ -208,6 +208,19 @@ test("recency: boosts within a tier, never across tiers", () => {
   assert.equal(boostedPos, firstPrefixPos); // first within its own tier
 });
 
+test("randomMainId: deterministic with injected rand, main entries only", () => {
+  const first = engine.randomMainId(() => 0);
+  assert.equal(engine.randomMainId(() => 0), first);
+  const last = engine.randomMainId(() => 0.999999);
+  assert.notEqual(first, last);
+  // both picks must belong to a row flagged as a main entry
+  const ids = packed.id;
+  const flags = packed.flags;
+  for (const id of [first, last]) {
+    assert.ok(ids.some((x, i) => x === id && (flags[i] & 1)), `id ${id} should be a main entry`);
+  }
+});
+
 test("empty input", () => {
   assert.equal(engine.query("").results.length, 0);
   assert.equal(engine.query("   ").results.length, 0);

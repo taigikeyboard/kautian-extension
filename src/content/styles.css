@@ -60,6 +60,30 @@
   text-overflow: ellipsis;
 }
 
+/* 🎲 random-entry button beside the「搜尋」label: plain inline glyph,
+   no border/background so it reads as part of the host page */
+.stnp-random {
+  margin-left: 0.35em;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 1em;
+  line-height: 1;
+  vertical-align: baseline;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.stnp-random:hover,
+.stnp-random:focus-visible {
+  opacity: 1;
+}
+
+.stnp-random:disabled {
+  opacity: 0.4;
+  cursor: wait;
+}
+
 .stnp-hint {
   padding: 0.3em 0.75em;
   color: #6b7280;
