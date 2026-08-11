@@ -6,6 +6,7 @@
 
 # local reference material
 references
+IMPLEMENTATION_PLAN.md
 
 # dependencies
 node_modules/
