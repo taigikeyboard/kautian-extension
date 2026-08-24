@@ -152,6 +152,9 @@ export function createUI({
 
   // --- events (each bound once) ---
   input.addEventListener("keydown", (ev) => {
+    // Let an in-progress IME composition (e.g. selecting Zhuyin/Pinyin candidates)
+    // own the arrow/Enter keys; only act once the candidate is committed.
+    if (ev.isComposing || ev.keyCode === 229) return;
     if (box.hidden || !rows.length) return;
     switch (ev.key) {
       case "ArrowDown":
