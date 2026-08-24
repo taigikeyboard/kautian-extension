@@ -1,6 +1,6 @@
 {
   "name": "kautian-extension",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Make searching the kautian website easier.",
   "type": "module",
